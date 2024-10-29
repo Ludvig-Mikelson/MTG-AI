@@ -1,0 +1,14 @@
+1.
+Implement Phases
+
+
+2.
+Create card types
+    1.sorcery
+    2.enchantment
+    3.instant
+
+3.
+Seperate battle phase in steps, declear attack, declear block, resolve combat
+    
+
