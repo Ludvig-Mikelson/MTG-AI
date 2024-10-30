@@ -1,14 +1,52 @@
-1.
-Implement Phases
+Big Plan:
+
+Goal 1: Train model to play mono red aggro mirror: 
+https://mtga.untapped.gg/meta/decks/510/mono-red-aggro/AAQAAQAB4ZUuAAqtEYXCAtsS3u0p2cIB26wDGBgCswMBEuIJAA?tab=overview
+
+Goal 2: Train model to play both sides of mono red aggro vs control(deck tbd)
+
+Goal 3, (unrealistic): Train model that can play any configuration of decks
+
+Goal 4, (even more unrealistic): Train model to find the best deck
 
 
-2.
-Create card types
-    1.sorcery
-    2.enchantment
-    3.instant
+1. Create an engine that can simulate the game
+    1. create an efficient way to give decision inputs
+    2. limit decision inputs to legal moves
 
-3.
-Seperate battle phase in steps, declear attack, declear block, resolve combat
+2. Transfer the gamestate into a matrix form
+    1. each action changes game state, even within phase
+
+3. Train the model
+    1. https://en.wikipedia.org/wiki/Monte_Carlo_tree_search
+    2. https://www.youtube.com/watch?v=62nq4Zsn8vc
+    3. https://www.youtube.com/watch?v=gsbkPpoxGQk
+    4. https://deepmind.google/discover/blog/discovering-novel-algorithms-with-alphatensor/
+    5. https://www.youtube.com/watch?v=xmImNoDc9Z4
+    6. https://www.geeksforgeeks.org/ml-monte-carlo-tree-search-mcts/
+    7. https://discovery.ucl.ac.uk/id/eprint/10045895/1/agz_unformatted_nature.pdf
+
+
+
+
+Engine:
+
+    1. Implement Phases
+
+    2. Create card types
+        1.sorcery
+        2.enchantment
+        3.instant
+
+    3. Seperate battle phase in steps, declear attack, declear block, resolve combat
+
+    4. Implement mana color
+
+
+Organization:
+
+    1. Seperate into py files
+        1. each type of card 
+        2. effects 
     
 

@@ -1,7 +1,7 @@
 import uuid
 
 class Card:
-    # Base class if needed for inheritance
+    
     pass
 
 class CreatureCard(Card):
@@ -75,9 +75,8 @@ class LandCard(Card):
                 player.land_board.append(self)
                 player.hand.remove(self)
                 
-                #self.activate_effects(player)
             else:
-                print(f"Not enough mana to play {self.name}")
+                print(f"Can't play {self.name}, land was already played")
         else:
             print("Cannot play land outside Main Phase")        
         
@@ -89,39 +88,61 @@ class LandCard(Card):
             self.tapped = True
             
 class SorceryCard(Card):
-    def __init__(self,name:str,mana_cost: int):
+    def __init__(self,name:str,mana_cost: int, effects=None):
+        self.id = str(uuid.uuid4())
         self.name = name
+        self.mana_cost = mana_cost
+        self.effects = effects if effects else []
+        
+    def activate_effects(self, player):
+
+        for effect in self.effects:
+            effect.apply(player)   
+            
+    def play(self,player,state):
+        if state.phase == "Main Phase 1":
+            if player.mana_pool >= self.mana_cost:
+                print(f"{player.name} plays {self.name}")
+                player.hand.remove(self)
+                player.mana_pool -= self.mana_cost
+                player.graveyard.append(self)
+                
+                self.activate_effects(player)
+            else:
+                print(f"Not enough mana to play {self.name}")
+        else:
+            print("Cannot play sorcery outside Main Phase")    
         
         
-# Card registry with basic card templates and effects
+
 Creature_Card_Registry = {
     "Giant Bear": {
         "name": "Giant Bear",
         "mana_cost": 5,
         "og_power": 5,
         "og_toughness": 4,
-        "effects": []  # Add specific effects if needed
+        "effects": []  
     },
     "Undead Soldier": {
         "name": "Undead Soldier",
         "mana_cost": 2,
         "og_power": 2,
         "og_toughness": 2,
-        "effects": []  # Add specific effects if needed
+        "effects": []  
     },
     "Goblin Grunt": {
         "name": "Goblin Grunt",
         "mana_cost": 1,
         "og_power": 1,
         "og_toughness": 1,
-        "effects": []  # Add specific effects if needed
+        "effects": []  
     },
     "Goblin Shaman": {
         "name": "Goblin Shaman",
         "mana_cost": 3,
         "og_power": 2,
         "og_toughness": 2,
-        "effects": ["GainManaEffect()"]  # This card gives +1 mana
+        "effects": ["GainManaEffect()"] 
     },
         "Small Rock": {
         "name": "Small Rock",
