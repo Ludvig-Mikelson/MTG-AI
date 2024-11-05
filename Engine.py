@@ -1,21 +1,10 @@
 # %% 
 import random
-from Card_Registry import card_factory, Creature_Card_Registry,Land_Card_Registry, Card,CreatureCard,LandCard
+from Card_Registry import card_factory, Creature_Card_Registry,Land_Card_Registry, Card,CreatureCard,LandCard, Player,SorceryCard,Sorcery_Card_Registry
 
 
      
-class Player:
-    def __init__(self, name: str, hand: list[Card], deck: list[Card], 
-                 board: list[Card], land_board: list[Card], graveyard: list[Card], mana_pool: int, life: int):
-        self.name = name
-        self.hand = hand
-        self.deck = deck
-        self.board = board
-        self.land_board = land_board
-        self.graveyard = graveyard
-        self.mana_pool = mana_pool
-        self.life = life
-        self.played_land = False
+
         
 class GameState:
     def __init__(self, players: list[Player], turn: int, phase: str):
@@ -30,24 +19,30 @@ def print_board(player):
     else:
         print(f"{player.name}'s board:")
         for card in player.board:
-            print(card)  # Each card will use its __str__ method
+            print(card)  
         
 
         
 def build_random_deck(deck_size=60):
-    card_names = list(Creature_Card_Registry.keys())  # Get all card names from the registry
+    card_names = list(Creature_Card_Registry.keys())  
     land_card_names = list(Land_Card_Registry.keys())
+    sorcery_card_names = list(Sorcery_Card_Registry.keys())
     deck = []
     
-    for _ in range((deck_size-20)):
+    for _ in range((deck_size-30)):
         card_name = random.choice(card_names)  # Randomly select a card name
         card = card_factory(card_name,"Creature")  # Create a unique instance of the card
         deck.append(card)  # Add the card to the deck
        
     for _ in range(20):
-        land_card_name = random.choice(land_card_names)  # Randomly select a card name
-        card = card_factory(land_card_name,"Land")  # Create a unique instance of the card
-        deck.append(card)  # Add the card to the deck
+        land_card_name = random.choice(land_card_names)  
+        card = card_factory(land_card_name,"Land")  
+        deck.append(card) 
+        
+    for _ in range(10):
+        sorcery_card_name = random.choice(sorcery_card_names)  
+        card = card_factory(sorcery_card_name,"Sorcery")  
+        deck.append(card)         
     
     random.shuffle(deck)
 
@@ -100,6 +95,7 @@ def main_phase_2(playerAP:Player,playerNAP:Player,state:GameState):
 def reset_creatures(player: Player):
     # Reset creatures on the player's board
     for creature in player.board:
+        if isinstance(creature,CreatureCard):
             creature.power = creature.og_power
             creature.toughness = creature.og_toughness
             creature.attacking = False
@@ -108,6 +104,7 @@ def reset_creatures(player: Player):
 
     # Reset creatures in the player's graveyard
     for creature in player.graveyard:
+        if isinstance(creature,CreatureCard):
             creature.power = creature.og_power
             creature.toughness = creature.og_toughness
             creature.attacking = False
@@ -196,12 +193,16 @@ def play_game(players: list[Player]):
         # Start turn for the current player
         main_phase_1(current_player,opp_player, state)
 
-        # Main phase - play creatures or cast spells
-        # For now, play the first card in hand if available
+
+        # For now, play random card
         creatures_hand = [card for card in current_player.hand if isinstance(card, CreatureCard)]
+        sorceries_hand = [card for card in current_player.hand if isinstance(card, SorceryCard)]
         if len(creatures_hand) > 0:
             #play_card(current_player, current_player.hand[0], state)  # Play the first card in hand
             random.choice(creatures_hand).play(current_player,state)
+            
+        if len(sorceries_hand) > 0:
+            random.choice(sorceries_hand).play(current_player,state,opp_player)
 
         # Battle phase - attack with creatures if any are on the board
         if len(current_player.board) > 0:

@@ -1,8 +1,22 @@
 import uuid
 
 class Card:
-    
     pass
+
+class Player:
+    def __init__(self, name: str, hand: list[Card], deck: list[Card], 
+                 board: list[Card], land_board: list[Card], graveyard: list[Card], mana_pool: int, life: int):
+        self.name = name
+        self.hand = hand
+        self.deck = deck
+        self.board = board
+        self.land_board = land_board
+        self.graveyard = graveyard
+        self.mana_pool = mana_pool
+        self.life = life
+        self.played_land = False
+
+
 
 class CreatureCard(Card):
     def __init__(self, name: str, mana_cost: int, og_power: int, og_toughness: int, effects=None,deathrattle=None, is_token = False):
@@ -94,12 +108,12 @@ class SorceryCard(Card):
         self.mana_cost = mana_cost
         self.effects = effects if effects else []
         
-    def activate_effects(self, player):
+    def activate_effects(self, target):
 
         for effect in self.effects:
-            effect.apply(player)   
+            effect.apply(self,target)   
             
-    def play(self,player,state):
+    def play(self,player,state,target):
         if state.phase == "Main Phase 1":
             if player.mana_pool >= self.mana_cost:
                 print(f"{player.name} plays {self.name}")
@@ -107,7 +121,7 @@ class SorceryCard(Card):
                 player.mana_pool -= self.mana_cost
                 player.graveyard.append(self)
                 
-                self.activate_effects(player)
+                self.activate_effects(target)
             else:
                 print(f"Not enough mana to play {self.name}")
         else:
@@ -174,6 +188,20 @@ Land_Card_Registry = {
     
     
 }
+
+Sorcery_Card_Registry = {
+    "Lightning strike": {
+        "name": "Lightning strike",
+        "mana_cost": 2,
+        "effects": ["DmgToAny(3)"] 
+        
+        
+    }
+    
+    
+}
+
+
         
 
 # Card factory function to create unique card instances
@@ -207,6 +235,18 @@ def card_factory(card_name,card_type):
             tap_effects=[eval(tap_effects) for tap_effects in template.get("tap_effects", [])]
         )
         
+    elif card_type == "Sorcery":
+        template = Sorcery_Card_Registry.get(card_name)
+         
+        if not template:
+            raise ValueError(f"Card '{card_name}' is not in the registry.")   
+        
+        return SorceryCard(
+            name=template["name"],
+            mana_cost=template["mana_cost"],
+            effects=[eval(effects) for effects in template.get("effects", [])]
+        )      
+        
 
 
 
@@ -226,3 +266,17 @@ class Spawn:
     def apply(self,player):
         player.board.append(self.token)
         print(f"{player.name} spawns {self.token.name}")
+        
+class DmgToAny:
+    def __init__(self,damage = 0):
+        self.damage = damage
+        
+    def apply(self,card,target):
+        if isinstance(target,Player):
+            target.life -= self.damage
+            print(f"{card.name} does {self.damage} damage to {target.name}")
+        elif isinstance(CreatureCard):
+            target.toughness -= self.damage
+            print(f"{card.name} does {self.damage} damage to {target.name}")
+        else:
+            print(f"{target.name} is not a valid target")
