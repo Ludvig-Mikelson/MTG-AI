@@ -61,7 +61,7 @@ def next_turn(state:GameState):
 def begin(playerAP:Player,playerNAP:Player,state:GameState):
     playerAP.mana_pool = 0
     playerNAP.mana_pool = 0    
-    state.phase = "Begin phase"
+    state.phase = "begin phase"
     playerAP.played_land = False
     for land in playerAP.land_board:
         land.tapped = False
@@ -73,7 +73,7 @@ def main_phase_1(playerAP:Player,playerNAP:Player,state:GameState):
     
     playerAP.mana_pool = 0
     playerNAP.mana_pool = 0
-    state.phase = "Main Phase 1"
+    state.phase = "main phase 1"
     print(f"{playerAP.name} Main Phase 1")
     
     lands = [card for card in playerAP.hand if isinstance(card, LandCard)]
@@ -88,7 +88,7 @@ def main_phase_1(playerAP:Player,playerNAP:Player,state:GameState):
                 land.tap(playerAP)
                 
 def main_phase_2(playerAP:Player,playerNAP:Player,state:GameState):
-    state.phase = "Main Phase 2"
+    state.phase = "main phase 2"
 
             
 

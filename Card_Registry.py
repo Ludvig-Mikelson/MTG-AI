@@ -19,7 +19,8 @@ class Player:
 
 
 class CreatureCard(Card):
-    def __init__(self, name: str, mana_cost: int, og_power: int, og_toughness: int, effects=None,deathrattle=None, is_token = False):
+    def __init__(self, name: str, mana_cost: int, og_power: int, og_toughness: int, effects=None,deathrattle=None, is_token = False,
+                 auras = []):
         self.id = str(uuid.uuid4())
         self.name = name
         self.mana_cost = mana_cost
@@ -33,6 +34,7 @@ class CreatureCard(Card):
         self.effects = effects if effects else []
         self.is_token = is_token
         self.deathrattle = deathrattle if deathrattle else []
+        self.auras = auras
         
         
     def activate_effects(self, player):
@@ -70,6 +72,11 @@ class CreatureCard(Card):
             # Check if the card has a DeathRattle effect
             for deathrattle in self.deathrattle:
                 deathrattle.apply(player)
+                
+        if len(self.auras) > 0:
+            for aura in self.auras:
+                aura.leaves_battlefield(player)
+                
 
     def __str__(self):
         # Return a human-readable string when printing the object
@@ -126,6 +133,43 @@ class SorceryCard(Card):
                 print(f"Not enough mana to play {self.name}")
         else:
             print("Cannot play sorcery outside Main Phase")    
+            
+            
+            
+class EnchantmentCard(Card):
+    def __init__(self,name:str,mana_cost: int, effects=None, deathrattle=None):
+        self.id = str(uuid.uuid4())
+        self.name = name
+        self.mana_cost = mana_cost
+        self.effects = effects if effects else []
+        self.deathrattle = deathrattle if deathrattle else []
+        
+    def activate_effects(self, target):
+
+        for effect in self.effects:
+            effect.apply(self,target)          
+        
+    def play(self,player,state,creaturecard):
+        if state.phase == "Main Phase 1":
+            if player.mana_pool >= self.mana_cost:
+                print(f"{player.name} plays {self.name}")
+                creaturecard.auras.append(self)
+                player.hand.remove(self)
+                player.mana_pool -= self.mana_cost
+                
+                self.activate_effects(player)
+            else:
+                print(f"Not enough mana to play {self.name}")
+        else:
+            print("Cannot play creature outside Main Phase")
+            
+        
+    
+    def leaves_battlefield(self, player):
+        self.activate_effects(player)
+        player.board.remove(self)
+        player.graveyard.append(self)
+        print(f"{self.name} leaves the battlefield.")
         
         
 
