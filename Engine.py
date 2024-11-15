@@ -3,7 +3,15 @@ import random
 from Card_Registry import card_factory, Creature_Card_Registry,Land_Card_Registry, Card,CreatureCard,LandCard, Player,SorceryCard,Sorcery_Card_Registry
 
 
-     
+class GameState:
+    def __init__(self, player_AP: Player, player_NAP: Player, player_S: Player, player_NS: Player, 
+                 turn: int, phase: str):
+        self.player_AP = player_AP
+        self.player_NAP = player_NAP
+        self.player_S = player_S
+        self.player_NS = player_NS
+        self.turn = turn
+        self.phase = phase      
 
         
 class GameState:

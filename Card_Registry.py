@@ -108,7 +108,7 @@ class LandCard(Card):
 
             self.tapped = True
             
-class SorceryCard(Card):
+class InstantCard(Card):
     def __init__(self,name:str,mana_cost: int, effects=None):
         self.id = str(uuid.uuid4())
         self.name = name
@@ -233,7 +233,7 @@ Land_Card_Registry = {
     
 }
 
-Sorcery_Card_Registry = {
+Instant_Card_Registry = {
     "Lightning strike": {
         "name": "Lightning strike",
         "mana_cost": 2,
@@ -279,13 +279,13 @@ def card_factory(card_name,card_type):
             tap_effects=[eval(tap_effects) for tap_effects in template.get("tap_effects", [])]
         )
         
-    elif card_type == "Sorcery":
-        template = Sorcery_Card_Registry.get(card_name)
+    elif card_type == "Instant":
+        template = Instant_Card_Registry.get(card_name)
          
         if not template:
             raise ValueError(f"Card '{card_name}' is not in the registry.")   
         
-        return SorceryCard(
+        return InstantCard(
             name=template["name"],
             mana_cost=template["mana_cost"],
             effects=[eval(effects) for effects in template.get("effects", [])]
