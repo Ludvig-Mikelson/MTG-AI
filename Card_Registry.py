@@ -19,7 +19,7 @@ class Player:
 
 
 class CreatureCard(Card):
-    def __init__(self, name: str, mana_cost: int, og_power: int, og_toughness: int, effects=None,deathrattle=None, is_token = False,
+    def __init__(self, name: str, mana_cost: int, og_power: int, og_toughness: int, effects=None, deathrattle=None, is_token=False,
                  auras = []):
         self.id = str(uuid.uuid4())
         self.name = name
@@ -216,6 +216,41 @@ Creature_Card_Registry = {
         "og_power": 0,
         "og_toughness": 4,
         "deathrattle": ["Spawn(\"Small Rock\")"] 
+    },
+    "Heartfire Hero": {
+        "name": "Heartfire Hero",
+        "mana_cost": 1,
+        "og_power": 1,
+        "og_toughness": 1,
+        "effects": []
+    },
+    "Monastery Swiftspear": {
+        "name": "Monastery Swiftspear",
+        "mana_cost": 1,
+        "og_power": 1,
+        "og_toughness": 2,
+        "effects": []
+    },
+    "Emberheart Challenger": {
+        "name": "Emberheart Challenger",
+        "mana_cost": 2,
+        "og_power": 2,
+        "og_toughness": 2,
+        "effects": []
+    },
+    "Manifold Mouse": {
+        "name": "Manifold Mouse",
+        "mana_cost": 2,
+        "og_power": 1,
+        "og_toughness": 2,
+        "effects": []
+    },
+    "Slickshot Show-Off": {
+        "name": "Slickshot Show-Off",
+        "mana_cost": 2,
+        "og_power": 1,
+        "og_toughness": 2,
+        "effects": []
     }
     
     
@@ -227,7 +262,11 @@ Land_Card_Registry = {
         "name": "Mountain",
         "tap_effects": ["GainManaEffect()"] ,
         "tapped": False 
-        
+    },
+    "Rockface Village": {
+        "name": "Rockface Village",
+        "tap_effects": ["GainManaEffect()"] ,   # Un vēl 2 alternatīvas ko var darīt
+        "tapped": False 
     }
     
     
@@ -237,9 +276,17 @@ Instant_Card_Registry = {
     "Lightning strike": {
         "name": "Lightning strike",
         "mana_cost": 2,
-        "effects": ["DmgToAny(3)"] 
-        
-        
+        "effects": ["DmgToAny(3)"]         
+    },
+    "Shock": {
+        "name": "Shock",
+        "mana_cost": 1,
+        "effects": ["DmgToAny(2)"]         
+    },
+    "Monstrous Rage": {
+        "name": "Monstrous Rage",
+        "mana_cost": 1,
+        "effects": ["ApplyBuffs(2,0)"]  # Bet šim jābūt tikai līdz gājiena beigām, un vēl citi efekti ir.
     }
     
     
@@ -312,7 +359,7 @@ class Spawn:
         print(f"{player.name} spawns {self.token.name}")
         
 class DmgToAny:
-    def __init__(self,damage = 0):
+    def __init__(self, damage = 0):
         self.damage = damage
         
     def apply(self,card,target):
@@ -324,3 +371,22 @@ class DmgToAny:
             print(f"{card.name} does {self.damage} damage to {target.name}")
         else:
             print(f"{target.name} is not a valid target")
+
+# Mēģināju pēc analoģijas interes pēc pievienot power/toughness mainītāju, kas strādā gan ar +, gan -. 
+# Idejiski gan šis pagaidām pamaina paliekoši, nevis tikai līdz gājiena beigām.
+class ApplyBuffs:
+    def __init__(self, power_change=0, toughness_change=0):
+        self.power_change = power_change
+        self.toughness_change = toughness_change
+    
+    def apply(self, card, target):
+        if isinstance(CreatureCard):
+            if self.power_change != 0:
+                target.power += self.power_change
+                print(f"{card.name} gives {self.power_change} power to {target.name}")
+            if self.toughness_change != 0:
+                target.toughness += self.toughness_change
+                print(f"{card.name} gives {self.toughness_change} toughness to {target.name}")
+        else:
+            print(f"{target.name} is not a valid target")
+        
