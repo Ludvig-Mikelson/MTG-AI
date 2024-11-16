@@ -50,12 +50,12 @@ Organization:
         2. effects 
 
 
-Ludvigs:
+Ludvigs: 19:11.24
 compleate legal_actions function
 compleate stack function
 compleate choosing function
 
-if time, compleate gammstate -> Matrix/Vector function
+if time, compleate gammstate -> Matrix/Vector function 
 
 
     
