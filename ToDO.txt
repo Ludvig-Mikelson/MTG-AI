@@ -48,5 +48,15 @@ Organization:
     1. Seperate into py files
         1. each type of card 
         2. effects 
+
+
+Ludvigs:
+compleate legal_actions function
+compleate stack function
+compleate choosing function
+
+if time, compleate gammstate -> Matrix/Vector function
+
+
     
 
