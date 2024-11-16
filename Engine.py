@@ -1,17 +1,17 @@
 # %% 
 import random
-from Card_Registry import card_factory, Creature_Card_Registry,Land_Card_Registry, Card,CreatureCard,LandCard, Player,SorceryCard,Sorcery_Card_Registry
+from Card_Registry import card_factory, Creature_Card_Registry,Land_Card_Registry, Card,CreatureCard,LandCard, Player,InstantCard,Instant_Card_Registry
 
 
-class GameState:
-    def __init__(self, player_AP: Player, player_NAP: Player, player_S: Player, player_NS: Player, 
-                 turn: int, phase: str):
-        self.player_AP = player_AP
-        self.player_NAP = player_NAP
-        self.player_S = player_S
-        self.player_NS = player_NS
-        self.turn = turn
-        self.phase = phase      
+#class GameState:
+    #def __init__(self, player_AP: Player, player_NAP: Player, player_S: Player, player_NS: Player, 
+       #          turn: int, phase: str):
+       # self.player_AP = player_AP
+       # self.player_NAP = player_NAP
+       #self.player_S = player_S
+       #self.player_NS = player_NS
+       # self.turn = turn
+       #self.phase = phase      
 
         
 class GameState:
@@ -34,7 +34,7 @@ def print_board(player):
 def build_random_deck(deck_size=60):
     card_names = list(Creature_Card_Registry.keys())  
     land_card_names = list(Land_Card_Registry.keys())
-    sorcery_card_names = list(Sorcery_Card_Registry.keys())
+    sorcery_card_names = list(Instant_Card_Registry.keys())
     deck = []
     
     for _ in range((deck_size-30)):
@@ -49,7 +49,7 @@ def build_random_deck(deck_size=60):
         
     for _ in range(10):
         sorcery_card_name = random.choice(sorcery_card_names)  
-        card = card_factory(sorcery_card_name,"Sorcery")  
+        card = card_factory(sorcery_card_name,"Instant")  
         deck.append(card)         
     
     random.shuffle(deck)
@@ -204,7 +204,7 @@ def play_game(players: list[Player]):
 
         # For now, play random card
         creatures_hand = [card for card in current_player.hand if isinstance(card, CreatureCard)]
-        sorceries_hand = [card for card in current_player.hand if isinstance(card, SorceryCard)]
+        sorceries_hand = [card for card in current_player.hand if isinstance(card, InstantCard)]
         if len(creatures_hand) > 0:
             #play_card(current_player, current_player.hand[0], state)  # Play the first card in hand
             random.choice(creatures_hand).play(current_player,state)
@@ -220,8 +220,7 @@ def play_game(players: list[Player]):
             
 
         
-        # End turn and move to the next turn
-        next_turn(state)
+
     
     print("Game over!")      
 

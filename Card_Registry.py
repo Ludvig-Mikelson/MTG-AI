@@ -43,7 +43,7 @@ class CreatureCard(Card):
             effect.apply(player)        
         
     def play(self,player,state):
-        if state.phase == "Main Phase 1":
+        if state.phase == "main phase 1":
             if player.mana_pool >= self.mana_cost:
                 print(f"{player.name} plays {self.name}")
                 player.board.append(self)
@@ -90,7 +90,7 @@ class LandCard(Card):
         self.tap_effects = tap_effects if tap_effects else []
         
     def play(self,player,state):
-        if state.phase == "Main Phase 1":
+        if state.phase == "main phase 1":
             if player.played_land == False:
                 print(f"{player.name} plays {self.name}")
                 player.land_board.append(self)
@@ -121,18 +121,17 @@ class InstantCard(Card):
             effect.apply(self,target)   
             
     def play(self,player,state,target):
-        if state.phase == "Main Phase 1":
-            if player.mana_pool >= self.mana_cost:
-                print(f"{player.name} plays {self.name}")
-                player.hand.remove(self)
-                player.mana_pool -= self.mana_cost
-                player.graveyard.append(self)
+
+        if player.mana_pool >= self.mana_cost:
+            print(f"{player.name} plays {self.name}")
+            player.hand.remove(self)
+            player.mana_pool -= self.mana_cost
+            player.graveyard.append(self)
                 
-                self.activate_effects(target)
-            else:
-                print(f"Not enough mana to play {self.name}")
+            self.activate_effects(target)
         else:
-            print("Cannot play sorcery outside Main Phase")    
+            print(f"Not enough mana to play {self.name}")
+
             
             
             
@@ -150,7 +149,7 @@ class EnchantmentCard(Card):
             effect.apply(self,target)          
         
     def play(self,player,state,creaturecard):
-        if state.phase == "Main Phase 1":
+        if state.phase == "main phase 1":
             if player.mana_pool >= self.mana_cost:
                 print(f"{player.name} plays {self.name}")
                 creaturecard.auras.append(self)
