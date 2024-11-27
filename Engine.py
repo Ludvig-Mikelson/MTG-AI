@@ -63,6 +63,10 @@ def draw_card(player):
         player.hand.append(player.deck.pop())     
     else:
         print("No more cards")
+    hand=[]
+    for card in player.hand:
+        hand.append(card.name)
+    print(player.name,"'s hand: ", hand)
         
 def next_turn(state:GameState):
     state.turn += 1
@@ -74,68 +78,74 @@ def begin(playerAP:Player,playerNAP:Player,state:GameState):
     playerAP.played_land = False
     for land in playerAP.land_board:
         land.tapped = False
+    for creature in playerAP.board:
+        creature.tapped = False
     
     draw_card(playerAP)
 
     
 def main_phase_1(playerAP:Player,playerNAP:Player,state:GameState):
     
-    playerAP.mana_pool = 0
-    playerNAP.mana_pool = 0
     state.phase = "main phase 1"
     print(f"{playerAP.name} Main Phase 1")
     
     lands = [card for card in playerAP.hand if isinstance(card, LandCard)]
     if playerAP.played_land == False and len(lands) > 0:
-    
         random.choice(lands).play(playerAP,state)
-        playerAP.played_land == True
+        playerAP.played_land = True
     
     if len(playerAP.land_board) > 0:
         for land in playerAP.land_board:
             if land.tapped == False:
                 land.tap(playerAP)
+
+    # For now, play random card
+    creatures_hand = [card for card in playerAP.hand if isinstance(card, CreatureCard)]
+    instants_hand = [card for card in playerAP.hand if isinstance(card, InstantCard)]
+    if len(creatures_hand) > 0:
+        random.choice(creatures_hand).play(playerAP,state)
+        
+    if len(instants_hand) > 0:
+        random.choice(instants_hand).play(playerAP,state,playerNAP)
                 
-def main_phase_2(playerAP:Player,playerNAP:Player,state:GameState):
+
+def main_phase_2(playerAP:Player,playerNAP:Player,state:GameState):     # Vai ir kaut kas kur ir svarīgi tieši main 1 un main 2? jeb vai nevar vnk phase = main phase ?
+
+    # Vajag pagaidām COPY-PASTE no phase-1 :
     state.phase = "main phase 2"
-
-            
-
-def reset_creatures(player: Player):
-    # Reset creatures on the player's board
-    for creature in player.board:
-        if isinstance(creature,CreatureCard):
-            creature.power = creature.og_power
-            creature.toughness = creature.og_toughness
-            creature.attacking = False
-            creature.blocking = False
-            creature.blocked_creature_id = None
-
-    # Reset creatures in the player's graveyard
-    for creature in player.graveyard:
-        if isinstance(creature,CreatureCard):
-            creature.power = creature.og_power
-            creature.toughness = creature.og_toughness
-            creature.attacking = False
-            creature.blocking = False
-            creature.blocked_creature_id = None
-            
-def end_phase(playerAP:Player,playerNAP:Player,state:GameState):
+    print(f"{playerAP.name} Main Phase 2")
     
-    reset_creatures(playerAP)
-    reset_creatures(playerNAP)
-    next_turn(state)
+    lands = [card for card in playerAP.hand if isinstance(card, LandCard)]
+    if playerAP.played_land == False and len(lands) > 0:                # NESTRĀDĀ, viena gā
     
+        random.choice(lands).play(playerAP,state)
+        playerAP.played_land = True
+    
+    if len(playerAP.land_board) > 0:
+        for land in playerAP.land_board:
+            if land.tapped == False:
+                land.tap(playerAP)
+
+    # For now, play random card
+    creatures_hand = [card for card in playerAP.hand if isinstance(card, CreatureCard)]
+    instants_hand = [card for card in playerAP.hand if isinstance(card, InstantCard)]
+    if len(creatures_hand) > 0:
+        random.choice(creatures_hand).play(playerAP,state)
+        
+    if len(instants_hand) > 0:
+        random.choice(instants_hand).play(playerAP,state,playerNAP)
         
         
         
 def battle_phase(player_atk:Player,player_def:Player):
     
     for creature in player_atk.board:
-        if random.choice([1,2]) == 1:
-            creature.attacking = True
-            print(f"{creature.power}/{creature.toughness} {creature.name}, is attacking {player_def.name}")
-    
+        if creature.tapped == False:
+            if random.choice([1,1]) == 1:
+                creature.attacking = True
+                creature.tapped = True
+                print(f"{creature.power}/{creature.toughness} {creature.name} is attacking {player_def.name}")
+        
     attackers = [creature for creature in player_atk.board if creature.attacking is True]
     n=0
     attack_block_set = []
@@ -186,7 +196,33 @@ def battle_phase(player_atk:Player,player_def:Player):
                 #player_def.graveyard.append(dead_creature)
                 dead_creature.leaves_battlefield(player_def)
             
+
     
+def reset_creatures(player: Player):
+    # Reset creatures on the player's board
+    for creature in player.board:
+        if isinstance(creature,CreatureCard):
+            creature.power = creature.og_power
+            creature.toughness = creature.og_toughness
+            creature.attacking = False
+            creature.blocking = False
+            creature.blocked_creature_id = None
+
+    # Reset creatures in the player's graveyard
+    for creature in player.graveyard:
+        if isinstance(creature,CreatureCard):
+            creature.power = creature.og_power
+            creature.toughness = creature.og_toughness
+            creature.attacking = False
+            creature.blocking = False
+            creature.blocked_creature_id = None
+            
+def end_phase(playerAP:Player,playerNAP:Player,state:GameState):
+    
+    reset_creatures(playerAP)
+    reset_creatures(playerNAP)
+    next_turn(state)
+
 
 
 def play_game(players: list[Player]):
@@ -194,43 +230,37 @@ def play_game(players: list[Player]):
     state = GameState(players, 1, "beginning")
     
     # Loop while all players have life > 0
-    while all(player.life > 0 for player in state.players):
+    while all(player.life > 0 for player in state.players) and state.turn<20:
         # Determine the current player and the opponent
         current_player = state.players[state.turn % len(players)]
         opp_player = state.players[(state.turn + 1) % len(players)]
         begin(current_player,opp_player,state)
+
         # Start turn for the current player
         main_phase_1(current_player,opp_player, state)
-
-
-        # For now, play random card
-        creatures_hand = [card for card in current_player.hand if isinstance(card, CreatureCard)]
-        sorceries_hand = [card for card in current_player.hand if isinstance(card, InstantCard)]
-        if len(creatures_hand) > 0:
-            #play_card(current_player, current_player.hand[0], state)  # Play the first card in hand
-            random.choice(creatures_hand).play(current_player,state)
-            
-        if len(sorceries_hand) > 0:
-            random.choice(sorceries_hand).play(current_player,state,opp_player)
 
         # Battle phase - attack with creatures if any are on the board
         if len(current_player.board) > 0:
             battle_phase(current_player, opp_player)
+
+        main_phase_2(current_player,opp_player, state)
             
         end_phase(current_player,opp_player,state)
             
 
         
-
-    
     print("Game over!")      
 
 
 deck1 = build_random_deck()
 deck2 = build_random_deck()
+start_hand1 = deck1[:7]
+start_hand2 = deck2[:7]
+deck1 = deck1[7:]
+deck2 = deck2[7:]
     
-player1 = Player("Bob", [], deck1, [], [], [], 0, 20)
-player2 = Player("Alice", [], deck2, [], [], [], 0, 20)
+player1 = Player("Bob", start_hand1, deck1, [], [], [], 0, 20)
+player2 = Player("Alice", start_hand2, deck2, [], [], [], 0, 20)
 players = [player1, player2]
 
 play_game(players)

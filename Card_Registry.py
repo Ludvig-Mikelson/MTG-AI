@@ -16,11 +16,15 @@ class Player:
         self.life = life
         self.played_land = False
 
-
+# Kā vispār šo darīt, vot nezinu - vajag lai prowess nenotiek pie izspēlēšanas, bet tikai pie instanta piemēram.
+# Bet tad kkā ir jāzina, ka šai kārtij tas jadara, var jau taisīt if-us ar vārdu un tad pielietot efektu. 
+# Jo citi efekti notiek tad kad šo kārti izspēlē, un es nez kā to normāli nošķirt lai nav 10 dažādi if-i...
+# Ko darīt ar izvēles soļiem?? Vot svarīgākais jautājums, jo tādu ir padaudz, piem. manifold mouse ir 2 tādas izvēles.
+# Jebšu, ko darīt ar "target creature" ???
 
 class CreatureCard(Card):
-    def __init__(self, name: str, mana_cost: int, og_power: int, og_toughness: int, effects=None, deathrattle=None, is_token=False,
-                 auras = []):
+    def __init__(self, name: str, mana_cost: int, og_power: int, og_toughness=44, effects=None, deathrattle=None, is_token=False,
+                 auras = [], tapped = True):
         self.id = str(uuid.uuid4())
         self.name = name
         self.mana_cost = mana_cost
@@ -35,15 +39,16 @@ class CreatureCard(Card):
         self.is_token = is_token
         self.deathrattle = deathrattle if deathrattle else []
         self.auras = auras
+        self.tapped = tapped
         
         
     def activate_effects(self, player):
         # Trigger the card's effects
         for effect in self.effects:
-            effect.apply(player)        
+            effect.apply(self, player)        # So all creature effects have to take in creature and player.
         
     def play(self,player,state):
-        if state.phase == "main phase 1":
+        if state.phase == "main phase 1" or "main phase 2":
             if player.mana_pool >= self.mana_cost:
                 print(f"{player.name} plays {self.name}")
                 player.board.append(self)
@@ -51,6 +56,7 @@ class CreatureCard(Card):
                 player.mana_pool -= self.mana_cost
                 
                 self.activate_effects(player)
+
             else:
                 print(f"Not enough mana to play {self.name}")
         else:
@@ -90,7 +96,7 @@ class LandCard(Card):
         self.tap_effects = tap_effects if tap_effects else []
         
     def play(self,player,state):
-        if state.phase == "main phase 1":
+        if state.phase == "main phase 1" or "main phase 2":
             if player.played_land == False:
                 print(f"{player.name} plays {self.name}")
                 player.land_board.append(self)
@@ -129,6 +135,21 @@ class InstantCard(Card):
             player.graveyard.append(self)
                 
             self.activate_effects(target)
+
+            # Trigger Prowess for all creatures with this effect
+            for creature in player.board:
+                for effect in creature.effects:
+                    if isinstance(effect, Prowess):
+                        effect.apply(creature, player)
+
+            # Trigger Prowess for all creatures with this effect
+            for creature in player.board:
+                if creature.name == "Slickshot Show-Off":
+                    creature.effects[0].apply(creature, player)
+
+                # for effect in creature.effects:
+                #     if isinstance(effect, Prowess):
+                #         effect.apply(creature)
         else:
             print(f"Not enough mana to play {self.name}")
 
@@ -149,7 +170,7 @@ class EnchantmentCard(Card):
             effect.apply(self,target)          
         
     def play(self,player,state,creaturecard):
-        if state.phase == "main phase 1":
+        if state.phase == "main phase 1" or "main phase 2":
             if player.mana_pool >= self.mana_cost:
                 print(f"{player.name} plays {self.name}")
                 creaturecard.auras.append(self)
@@ -157,6 +178,12 @@ class EnchantmentCard(Card):
                 player.mana_pool -= self.mana_cost
                 
                 self.activate_effects(player)
+
+                # Trigger Prowess for all creatures with this effect
+                for creature in player.board:
+                    for effect in creature.effects:
+                        if isinstance(effect, Prowess):
+                            effect.apply(creature)
             else:
                 print(f"Not enough mana to play {self.name}")
         else:
@@ -173,69 +200,73 @@ class EnchantmentCard(Card):
         
 
 Creature_Card_Registry = {
-    "Giant Bear": {
-        "name": "Giant Bear",
-        "mana_cost": 5,
-        "og_power": 5,
-        "og_toughness": 4,
-        "effects": []  
-    },
-    "Undead Soldier": {
-        "name": "Undead Soldier",
-        "mana_cost": 2,
-        "og_power": 2,
-        "og_toughness": 2,
-        "effects": []  
-    },
-    "Goblin Grunt": {
-        "name": "Goblin Grunt",
-        "mana_cost": 1,
-        "og_power": 1,
-        "og_toughness": 1,
-        "effects": []  
-    },
-    "Goblin Shaman": {
-        "name": "Goblin Shaman",
-        "mana_cost": 3,
-        "og_power": 2,
-        "og_toughness": 2,
-        "effects": ["GainManaEffect()"] 
-    },
-        "Small Rock": {
-        "name": "Small Rock",
-        "mana_cost": 1,
-        "og_power": 0,
-        "og_toughness": 2,
-        "effects": [], 
-        "is_token": True
-    },
-        "Rock": {
-        "name": "Rock",
-        "mana_cost": 2,
-        "og_power": 0,
-        "og_toughness": 4,
-        "deathrattle": ["Spawn(\"Small Rock\")"] 
-    },
+    # "Giant Bear": {
+    #     "name": "Giant Bear",
+    #     "mana_cost": 5,
+    #     "og_power": 5,
+    #     "og_toughness": 4,
+    #     "effects": []  
+    # },
+    # "Undead Soldier": {
+    #     "name": "Undead Soldier",
+    #     "mana_cost": 2,
+    #     "og_power": 2,
+    #     "og_toughness": 2,
+    #     "effects": []  
+    # },
+    # "Goblin Grunt": {
+    #     "name": "Goblin Grunt",
+    #     "mana_cost": 1,
+    #     "og_power": 1,
+    #     "og_toughness": 1,
+    #     "effects": []  
+    # },
+    # "Goblin Shaman": {
+    #     "name": "Goblin Shaman",
+    #     "mana_cost": 3,
+    #     "og_power": 2,
+    #     "og_toughness": 2,
+    #     "effects": ["GainManaEffect()"] 
+    # },
+    #     "Small Rock": {
+    #     "name": "Small Rock",
+    #     "mana_cost": 1,
+    #     "og_power": 0,
+    #     "og_toughness": 2,
+    #     "effects": [], 
+    #     "is_token": True
+    # },
+    #     "Rock": {
+    #     "name": "Rock",
+    #     "mana_cost": 2,
+    #     "og_power": 0,
+    #     "og_toughness": 4,
+    #     "deathrattle": ["Spawn(\"Small Rock\")"] 
+    # },
     "Heartfire Hero": {
         "name": "Heartfire Hero",
         "mana_cost": 1,
         "og_power": 1,
         "og_toughness": 1,
-        "effects": []
+        "effects": [],
+        "deathrattle": []
     },
     "Monastery Swiftspear": {
         "name": "Monastery Swiftspear",
         "mana_cost": 1,
         "og_power": 1,
         "og_toughness": 2,
-        "effects": []
+        "tests": 71,
+        "effects": ["Prowess()"],
+        "tapped": False         # This is HASTE! Because that's for starting value
     },
     "Emberheart Challenger": {
         "name": "Emberheart Challenger",
         "mana_cost": 2,
         "og_power": 2,
         "og_toughness": 2,
-        "effects": []
+        "effects": ["Prowess()"],
+        "tapped": False
     },
     "Manifold Mouse": {
         "name": "Manifold Mouse",
@@ -249,7 +280,8 @@ Creature_Card_Registry = {
         "mana_cost": 2,
         "og_power": 1,
         "og_toughness": 2,
-        "effects": []
+        "effects": ["Prowess_Slickshot()"],
+        "tapped": False
     }
     
     
@@ -262,11 +294,11 @@ Land_Card_Registry = {
         "tap_effects": ["GainManaEffect()"] ,
         "tapped": False 
     },
-    "Rockface Village": {
-        "name": "Rockface Village",
-        "tap_effects": ["GainManaEffect()"] ,   # Un vēl 2 alternatīvas ko var darīt
-        "tapped": False 
-    }
+    # "Rockface Village": {
+    #     "name": "Rockface Village",
+    #     "tap_effects": ["GainManaEffect()"] ,   # Un vēl 2 alternatīvas ko var darīt
+    #     "tapped": False 
+    # }
     
     
 }
@@ -311,7 +343,9 @@ def card_factory(card_name,card_type):
             og_toughness=template["og_toughness"],
             effects = [eval(effect) for effect in template.get("effects", [])],
             deathrattle=[eval(deathrattle) for deathrattle in template.get("deathrattle", [])],
-            is_token= template.get("is_token", False)
+            is_token=template.get("is_token", False),
+            tapped=template.get("tapped", True)
+
         )
     elif card_type == "Land":
         template = Land_Card_Registry.get(card_name)
@@ -365,7 +399,8 @@ class DmgToAny:
         if isinstance(target,Player):
             target.life -= self.damage
             print(f"{card.name} does {self.damage} damage to {target.name}")
-        elif isinstance(CreatureCard):
+            print(f"{target.name} has {target.life} life left")
+        elif isinstance(card, CreatureCard):
             target.toughness -= self.damage
             print(f"{card.name} does {self.damage} damage to {target.name}")
         else:
@@ -379,7 +414,7 @@ class ApplyBuffs:
         self.toughness_change = toughness_change
     
     def apply(self, card, target):
-        if isinstance(CreatureCard):
+        if isinstance(card, CreatureCard):
             if self.power_change != 0:
                 target.power += self.power_change
                 print(f"{card.name} gives {self.power_change} power to {target.name}")
@@ -388,4 +423,21 @@ class ApplyBuffs:
                 print(f"{card.name} gives {self.toughness_change} toughness to {target.name}")
         else:
             print(f"{target.name} is not a valid target")
+
+class Prowess:
+    def apply(self, creature, player):
+        # Apply the +1/+1 effect to the creature
+        creature.power += 1
+        creature.toughness += 1
+        print(f"{creature.name} got +1/+1 until end of turn from Prowess")
+
+class Prowess_Slickshot: 
+    def apply(self, creature, player):
+        # Apply the +2/+0 effect to the creature
+        creature.power += 2
+        creature.toughness += 0
+        print(f"{creature.name} got +2/+0 until end of turn from Prowess_Slickshot")
+
+
+
         
