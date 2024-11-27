@@ -105,7 +105,7 @@ def main_phase_1(playerAP:Player,playerNAP:Player,state:GameState):
         random.choice(creatures_hand).play(playerAP,state)
         
     if len(instants_hand) > 0:
-        random.choice(instants_hand).play(playerAP,state,playerNAP)
+        random.choice(instants_hand).play(playerAP,state,playerNAP)     # The target can be also a creature!
                 
 
 def main_phase_2(playerAP:Player,playerNAP:Player,state:GameState):     # Vai ir kaut kas kur ir svarīgi tieši main 1 un main 2? jeb vai nevar vnk phase = main phase ?
@@ -181,19 +181,13 @@ def battle_phase(player_atk:Player,player_def:Player):
         for dead_creature_id in dead_creatures_atk:   
             dead_creature = next((creature for creature in player_atk.board if creature.id == dead_creature_id), None)
             if dead_creature:
-                print(f"{dead_creature.name} is sent to the graveyard.")
-                #player_atk.board.remove(dead_creature)
-                #player_atk.graveyard.append(dead_creature)
-                dead_creature.leaves_battlefield(player_atk)
+                dead_creature.leaves_battlefield(player_atk, player_def)
                 
         dead_creatures_def = [creature.id for creature in player_def.board if creature.toughness <= 0]
         for dead_creature_id in dead_creatures_def:   
             dead_creature = next((creature for creature in player_def.board if creature.id == dead_creature_id), None)
             if dead_creature:
-                print(f"{dead_creature.name} is sent to the graveyard.")
-                #player_def.board.remove(dead_creature)
-                #player_def.graveyard.append(dead_creature)
-                dead_creature.leaves_battlefield(player_def)
+                dead_creature.leaves_battlefield(player_def, player_atk)
             
 
     
@@ -201,11 +195,12 @@ def reset_creatures(player: Player):
     # Reset creatures on the player's board
     for creature in player.board:
         if isinstance(creature,CreatureCard):
-            creature.power = creature.og_power
-            creature.toughness = creature.og_toughness
+            creature.power = creature.og_power + creature.counter_power
+            creature.toughness = creature.og_toughness + creature.counter_toughness
             creature.attacking = False
-            creature.blocking = False
+            creature.blocking = False 
             creature.blocked_creature_id = None
+            creature.spell_targeted = False
 
     # Reset creatures in the player's graveyard
     for creature in player.graveyard:

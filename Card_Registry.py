@@ -23,7 +23,7 @@ class Player:
 # Jebšu, ko darīt ar "target creature" ???
 
 class CreatureCard(Card):
-    def __init__(self, name: str, mana_cost: int, og_power: int, og_toughness=44, effects=None, deathrattle=None, is_token=False,
+    def __init__(self, name: str, mana_cost: int, og_power: int, og_toughness: int, effects=None, deathrattle=None, is_token=False,
                  auras = [], tapped = True):
         self.id = str(uuid.uuid4())
         self.name = name
@@ -32,18 +32,21 @@ class CreatureCard(Card):
         self.og_toughness = og_toughness
         self.power = og_power  # Initialize with original values
         self.toughness = og_toughness  # Initialize with original values
+        self.counter_power = 0
+        self.counter_toughness = 0
         self.attacking = False
         self.blocking = False
         self.blocked_creature_id = None
-        self.effects = effects if effects else []
+        self.effects = effects if effects else []       # These are only effects that DON'T activate on placement!
         self.is_token = is_token
         self.deathrattle = deathrattle if deathrattle else []
         self.auras = auras
         self.tapped = tapped
+        self.spell_targeted = False
         
         
     def activate_effects(self, player):
-        # Trigger the card's effects
+        # Trigger the card's on-play effects, for this deck there are none
         for effect in self.effects:
             effect.apply(self, player)        # So all creature effects have to take in creature and player.
         
@@ -55,7 +58,7 @@ class CreatureCard(Card):
                 player.hand.remove(self)
                 player.mana_pool -= self.mana_cost
                 
-                self.activate_effects(player)
+                # self.activate_effects(player)     # Because there are no on-play effects
 
             else:
                 print(f"Not enough mana to play {self.name}")
@@ -64,7 +67,7 @@ class CreatureCard(Card):
             
     
 
-    def leaves_battlefield(self, player):
+    def leaves_battlefield(self, player, player_op):
         """Called when the creature leaves the battlefield."""
         if self.is_token:
             # Remove token from the player's battlefield
@@ -73,11 +76,15 @@ class CreatureCard(Card):
         else:
             player.board.remove(self)
             player.graveyard.append(self)
+            self.counter_power = 0
+            self.counter_toughness = 0
             print(f"{self.name} leaves the battlefield.")
             
             # Check if the card has a DeathRattle effect
             for deathrattle in self.deathrattle:
-                deathrattle.apply(player)
+                # deathrattle.apply(self, player)   # Doesn't work if the effects have different specifics
+                if isinstance(deathrattle, DmgToAny):       # Heartfire Hero
+                    deathrattle.apply(self, player_op, self.power)
                 
         if len(self.auras) > 0:
             for aura in self.auras:
@@ -136,20 +143,24 @@ class InstantCard(Card):
                 
             self.activate_effects(target)
 
-            # Trigger Prowess for all creatures with this effect
+            # Trigger them effects for all creatures with said effects:
             for creature in player.board:
                 for effect in creature.effects:
                     if isinstance(effect, Prowess):
                         effect.apply(creature, player)
+                    if isinstance(effect, Prowess_Slickshot):
+                        effect.apply(creature, player)
+            # Trigger the effects that activate on targeted:
+            if isinstance(target, CreatureCard):
+                for effect in target.effects:
+                    if isinstance(effect, Valiant_Heartfire):       
+                        # Šeit vairāki komentāri: 
+                        # 0. Šī metode iespējams ir ne-vispārināma, jo nu sanāk visus šitos efektus aktivizēt iekš instant.play un enchantment, kas nešķiet super gudri, bet laikam šim deckam strādā?
+                        # 1. ja būs vairāk efektu, iespējams nevajag visus čekot pēc tipa, var vnk aktivizēt tos kas ir on-targeted.
+                        # 2. Nezinu kā šis stack-ojas, par to vajag tad kārtīgi padomāt vai viss saiet.
+                        # 3. Jautājums par secību vot stackam, ka tikai nevajag sākumā buffot un tad iet spell effect? Jo nu ja gadījumā tas ir damage, kas reālistiski tā nekad gan nebūs.
+                        effect.apply(target, player)
 
-            # Trigger Prowess for all creatures with this effect
-            for creature in player.board:
-                if creature.name == "Slickshot Show-Off":
-                    creature.effects[0].apply(creature, player)
-
-                # for effect in creature.effects:
-                #     if isinstance(effect, Prowess):
-                #         effect.apply(creature)
         else:
             print(f"Not enough mana to play {self.name}")
 
@@ -180,6 +191,7 @@ class EnchantmentCard(Card):
                 self.activate_effects(player)
 
                 # Trigger Prowess for all creatures with this effect
+                # NOT UPDATED! :
                 for creature in player.board:
                     for effect in creature.effects:
                         if isinstance(effect, Prowess):
@@ -248,8 +260,8 @@ Creature_Card_Registry = {
         "mana_cost": 1,
         "og_power": 1,
         "og_toughness": 1,
-        "effects": [],
-        "deathrattle": []
+        "effects": ["Valiant_Heartfire()"],
+        "deathrattle": ["DmgToAny(0)"]  # Damage is defined later
     },
     "Monastery Swiftspear": {
         "name": "Monastery Swiftspear",
@@ -292,7 +304,7 @@ Land_Card_Registry = {
     "Mountain": {
         "name": "Mountain",
         "tap_effects": ["GainManaEffect()"] ,
-        "tapped": False 
+        "tapped": False
     },
     # "Rockface Village": {
     #     "name": "Rockface Village",
@@ -374,35 +386,37 @@ def card_factory(card_name,card_type):
 
 
 
-class GainManaEffect:
-    def __init__(self, mana_amount=1):
-        self.mana_amount = mana_amount
+# class GainManaEffect:
+#     def __init__(self, mana_amount=1):
+#         self.mana_amount = mana_amount
 
-    def apply(self, player):
-        # This effect adds mana to the player's mana pool
-        player.mana_pool += self.mana_amount
-        print(f"{player.name} gains {self.mana_amount} mana! Current mana: {player.mana_pool}")
+#     def apply(self, player):
+#         # This effect adds mana to the player's mana pool
+#         player.mana_pool += self.mana_amount
+#         print(f"{player.name} gains {self.mana_amount} mana! Current mana: {player.mana_pool}")
         
-class Spawn:
-    def __init__(self, token = False):
-        self.token = card_factory(token,"Creature")
+# class Spawn:
+#     def __init__(self, token = False):
+#         self.token = card_factory(token,"Creature")
     
-    def apply(self,player):
-        player.board.append(self.token)
-        print(f"{player.name} spawns {self.token.name}")
+#     def apply(self,player):
+#         player.board.append(self.token)
+#         print(f"{player.name} spawns {self.token.name}")
         
 class DmgToAny:
     def __init__(self, damage = 0):
         self.damage = damage
         
-    def apply(self,card,target):
+    def apply(self, card, target, damage = 0):
         if isinstance(target,Player):
-            target.life -= self.damage
-            print(f"{card.name} does {self.damage} damage to {target.name}")
+            if self.damage > 0:         # The case when damage can be defined at start
+                damage = self.damage
+            target.life -= damage
+            print(f"{card.name} does {damage} damage to {target.name}")
             print(f"{target.name} has {target.life} life left")
         elif isinstance(card, CreatureCard):
-            target.toughness -= self.damage
-            print(f"{card.name} does {self.damage} damage to {target.name}")
+            target.toughness -= damage
+            print(f"{card.name} does {damage} damage to {target.name}")
         else:
             print(f"{target.name} is not a valid target")
 
@@ -425,19 +439,24 @@ class ApplyBuffs:
             print(f"{target.name} is not a valid target")
 
 class Prowess:
-    def apply(self, creature, player):
+    def apply(creature: CreatureCard, player):
         # Apply the +1/+1 effect to the creature
         creature.power += 1
         creature.toughness += 1
         print(f"{creature.name} got +1/+1 until end of turn from Prowess")
 
 class Prowess_Slickshot: 
-    def apply(self, creature, player):
+    def apply(creature: CreatureCard, player):
         # Apply the +2/+0 effect to the creature
         creature.power += 2
         creature.toughness += 0
         print(f"{creature.name} got +2/+0 until end of turn from Prowess_Slickshot")
 
-
+class Valiant_Heartfire:        # Fak, šim vajag aktivizēties arī no Manifold Mouse targeted efekta
+    def apply(creature: CreatureCard, player):
+        if creature.spell_targeted == False:
+            creature.counter_power += 1
+            creature.counter_toughness += 1
+            creature.spell_targeted = True
 
         
