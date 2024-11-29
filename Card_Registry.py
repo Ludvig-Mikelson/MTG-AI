@@ -43,6 +43,7 @@ class CreatureCard(Card):
         self.auras = auras
         self.tapped = tapped
         self.spell_targeted = False
+        self.blockers = []
         
         
     def activate_effects(self, player):
@@ -133,7 +134,7 @@ class InstantCard(Card):
         for effect in self.effects:
             effect.apply(self,target)   
             
-    def play(self,player,state,target):
+    def play(self,player,target):
 
         if player.mana_pool >= self.mana_cost:
             print(f"{player.name} plays {self.name}")
@@ -386,14 +387,14 @@ def card_factory(card_name,card_type):
 
 
 
-# class GainManaEffect:
-#     def __init__(self, mana_amount=1):
-#         self.mana_amount = mana_amount
+class GainManaEffect:
+    def __init__(self, mana_amount=1):
+        self.mana_amount = mana_amount
 
-#     def apply(self, player):
-#         # This effect adds mana to the player's mana pool
-#         player.mana_pool += self.mana_amount
-#         print(f"{player.name} gains {self.mana_amount} mana! Current mana: {player.mana_pool}")
+    def apply(self, player):
+        #This effect adds mana to the player's mana pool
+        player.mana_pool += self.mana_amount
+        print(f"{player.name} gains {self.mana_amount} mana! Current mana: {player.mana_pool}")
         
 # class Spawn:
 #     def __init__(self, token = False):
