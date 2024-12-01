@@ -43,7 +43,7 @@ def play_land_legal_actions(player_s, actions):
         if isinstance(land, cs.LandCard) and player_s.played_land == False:
             actions.append({
                 "type": "land",
-                "id": land.id,
+                "id": land,
                 "name": land.name,
                 "player": player_s,
                 "target": None,
@@ -128,38 +128,64 @@ def legal_actions(GameState, instant_to_target=None):
         target_instant_legal_actions(player_s, player_ns, instant_to_target, actions)
         return actions
     
-    if phase == "main phase 1" or "main phase 2":
-        # tap land actions
-        tap_land_legal_actions(player_s, actions)
+    if phase == "main phase 1" or phase == "main phase 2":
+        
+        if player_s == player_ap:
+            # tap land actions
+            tap_land_legal_actions(player_s, actions)
 
-        # play land actions
-        play_land_legal_actions(player_s, actions)
-        
-        # play creature actions
-        play_creature_legal_actions(player_s, actions)
-        
-        # play instant actions
-        play_instant_legal_actions(player_s, actions)
+            # play land actions
+            play_land_legal_actions(player_s, actions)
+            
+            # play creature actions
+            play_creature_legal_actions(player_s, actions)
+            
+            # play instant actions
+            play_instant_legal_actions(player_s, actions)
+            
+        elif player_s == player_nap:
+            # tap land actions
+            tap_land_legal_actions(player_s, actions)
+            # play instant actions
+            play_instant_legal_actions(player_s, actions)
+            
         
     elif phase == "declare attack phase":
-        # tap land actions
-        tap_land_legal_actions(player_s, actions)
         
-        # play instant actions
-        play_instant_legal_actions(player_s, actions)
-        
-        # declare attack actions
-        attack_legal_actions(player_ap, actions)
+        if player_s == player_ap:
+            # tap land actions
+            tap_land_legal_actions(player_s, actions)
+            
+            # play instant actions
+            play_instant_legal_actions(player_s, actions)
+            
+            # declare attack actions
+            attack_legal_actions(player_ap, actions)
+            
+        elif player_s == player_nap:
+            # tap land actions
+            tap_land_legal_actions(player_s, actions)
+            # play instant actions
+            play_instant_legal_actions(player_s, actions)
     
     elif phase == "declare block phase":
-        # tap land actions
-        tap_land_legal_actions(player_s, actions)
         
-        # play instant actions
-        play_instant_legal_actions(player_s, actions)
-        
-        # declare block acions
-        block_legal_actions(player_ap, player_nap, actions)
+        if player_s == player_ap:
+            # tap land actions
+            tap_land_legal_actions(player_s, actions)
+            
+            # play instant actions
+            play_instant_legal_actions(player_s, actions)
+            
+        elif player_s == player_nap:
+            # tap land actions
+            tap_land_legal_actions(player_s, actions)
+            
+            # play instant actions
+            play_instant_legal_actions(player_s, actions)
+            
+            # declare block acions
+            block_legal_actions(player_ap, player_nap, actions)
         
          
     elif phase == "resolve battle phase":
@@ -203,10 +229,11 @@ def legal_actions(GameState, instant_to_target=None):
             
             
 def choose_action(actions, GameState):
+    print("Choose Action")
     
     # If there are any actions that can be made randomly choose to take random action or not
     print(f"{GameState.player_S.name}'s priority")
-    if actions and random.choice([1,2]) == 1:
+    if actions:
         action = random.choice(actions)
         
         # If the action is an instant choose the target first
@@ -228,12 +255,20 @@ def choose_action(actions, GameState):
             GameState.phase = "just blocks"
             action = None
             
+        elif action["type"] == "land":
+            GameState.player_S.played_land = True
+            action["id"].tapped = True
+            
         GameState.player_S.passed = False
         GameState.player_S.mana_pool -= action["cost"]
-        print(f"{action["player"].name} plays {action["name"]}")
+        
+        print(f"{action["player"].name}, {action["type"]}")
+        
+        #print(GameState.phase)
         
         if action != None:
             GameState.stack.append(action)
+    
             
             
     # If the player choosing to attack or block doesn't, move to after phase where no blcoks or attacks can be declared      
@@ -258,10 +293,19 @@ def choose_action(actions, GameState):
  
     
 def execute_stack(GameState):
-    stack = GameState.stack.reverse()
+    print("Execute Stack")
+    stack = list(reversed(GameState.stack))
     
+    print(stack)
     for action in stack:
-        action["action"](action["player"], action["target"])
+        
+        if action["target"] is not None:
+        
+            print(action["action"])
+            action["action"](action["player"], action["target"])
+        else:
+        
+            action["action"](action["player"])
             
     GameState.player_S = GameState.player_AP
     GameState.player_NS = GameState.player_NAP
@@ -269,7 +313,8 @@ def execute_stack(GameState):
         
 
 def change_phase(GameState):
-
+    print("Change Phase")
+    
     current_phase = GameState.phase
     en.phase_actions[current_phase](GameState)
     GameState.player_S = GameState.player_AP
@@ -277,7 +322,7 @@ def change_phase(GameState):
 
 
 def add_to_stack(GameState):
-    
+    print("Add to Stack")
     actions = legal_actions(GameState)
     action = choose_action(actions, GameState)
     if action:
@@ -285,35 +330,50 @@ def add_to_stack(GameState):
     
     
 def main_action(GameState):
-    
+    print("Main Action")
     
     add_to_stack(GameState)
     
     # Execute stack if both players passed and there is anything to execute    
     if GameState.stack and GameState.player_AP.passed and GameState.player_NAP.passed:
+        print("Execute stack if both players passed")
+
         execute_stack(GameState)
     
     # Change phase if no stack and both players pass        
     elif not GameState.stack and GameState.player_AP.passed and GameState.player_NAP.passed:
+        print("Change Phase if both players passes and no actions")
+
         change_phase(GameState)
     
     # Keep prio on attacker or blocker during the just attacks/blocks phase 
     elif GameState.reset_prio == True:
+        print("gamestate prio is reset")
+
         GameState.player_S = GameState.player_AP
         GameState.player_NS = GameState.player_NAP
         GameState.reset_prio = False
+        GameState.player_AP.passed = False
+        GameState.player_NAP.passed = False
     
     # Switch between player adding to the stack
-    else:    
-        GameState.player_S = GameState.player_NS
-        GameState.player_NS = GameState.player_S
+    else:
+
+        print("Prio is switched")
+    
+        GameState.player_S_copy = GameState.player_NS
+        GameState.player_NS_copy = GameState.player_S
+
+        GameState.player_S = GameState.player_S_copy
+        GameState.player_NS = GameState.player_NS_copy
+
         
 player1 = en.player1
 player2 = en.player2
 
 state = cs.GameState(player_AP=player1,player_NAP=player2,stack=[])
 
-for _ in range(1,10):
+for _ in range(1,100):
     main_action(state)
     
     

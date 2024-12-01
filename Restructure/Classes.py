@@ -115,12 +115,11 @@ class LandCard(Card):
         
     def play(self,player):
         
-        if player.played_land == False:
-            print(f"{player.name} plays {self.name}")
-            player.land_board.append(self)
-            player.hand.remove(self)
-            player.played_land == True
-                
+        print(f"{player.name} plays {self.name}")
+        player.land_board.append(self)
+        player.hand.remove(self)
+        player.played_land == True
+            
         
     def tap(self,player):
         if self.tapped == False:

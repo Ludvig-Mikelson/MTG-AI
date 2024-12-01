@@ -38,7 +38,8 @@ def build_random_deck(deck_size=60):
     
 def draw_card(player):
     if len(player.deck) > 0:
-        player.hand.append(player.deck.pop())     
+        player.hand.append(player.deck.pop())  
+        print(f"{player.name} draws a card")   
     else:
         print("No more cards")
     hand=[]
@@ -46,8 +47,7 @@ def draw_card(player):
         hand.append(card.name)
     print(player.name,"'s hand: ", hand)
         
-def next_turn(state:cs.GameState):
-    state.turn += 1
+
     
 def begin_phase(state:cs.GameState):
     state.player_AP.mana_pool = 0
@@ -60,6 +60,7 @@ def begin_phase(state:cs.GameState):
         creature.tapped = False
     
     draw_card(state.player_AP)
+    
     print("Begin Phase")
 
     
@@ -67,6 +68,8 @@ def main_phase_1(state:cs.GameState):
     
     state.player_AP.mana_pool = 0
     state.player_NAP.mana_pool = 0
+    state.player_AP.passed = False
+    state.player_NAP.passed = False
     
     state.phase = "main phase 1"
     print(f"{state.player_AP.name} Main Phase 1")
@@ -75,22 +78,30 @@ def attack_phase(state:cs.GameState):
     
     state.player_AP.mana_pool = 0
     state.player_NAP.mana_pool = 0
+    state.player_AP.passed = False
+    state.player_NAP.passed = False
     
     state.phase = "declare attack phase"
     print(f"{state.player_AP.name} declare attack phase")
     
 def block_phase(state:cs.GameState):
+    state.player_AP.passed = False
+    state.player_NAP.passed = False
     
     state.phase = "declare block phase"
     print(f"{state.player_AP.name} declare block phase")    
     
 def resolve_phase(state:cs.GameState):
+    state.player_AP.passed = False
+    state.player_NAP.passed = False
     
     state.phase = "resolve battle phase"
     print(f"{state.player_AP.name} resolve battle phase")  
     
                 
 def main_phase_2(state:cs.GameState):
+    state.player_AP.passed = False
+    state.player_NAP.passed = False
     
     state.player_AP.mana_pool = 0
     state.player_NAP.mana_pool = 0
@@ -175,12 +186,13 @@ def reset_creatures(player: cs.Player):
             creature.blocking = False
             creature.blocked_creature_id = None
             
-def end_phase(playerAP:cs.Player,playerNAP:cs.Player,state:cs.GameState):
+def end_phase(state:cs.GameState):
     state.phase = "end phase"
-    reset_creatures(playerAP)
-    reset_creatures(playerNAP)
     
-    next_turn(state)
+    reset_creatures(state.player_AP)
+    reset_creatures(state.player_NAP)
+    
+   
     
     
     
