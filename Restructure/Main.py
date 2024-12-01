@@ -1,4 +1,5 @@
-# tests
+# %% 
+
 import random
 import Classes as cs
 import Effects as ef
@@ -17,7 +18,8 @@ def play_creature_legal_actions(player_s, actions):
                 "name": creature.name,
                 "player": player_s,
                 "target": None,
-                "action": "play_creature"
+                "action": creature.play,
+                "cost": creature.mana_cost
             })
 
 
@@ -31,7 +33,8 @@ def play_instant_legal_actions(player_s, actions):
                 "name": instant.name,
                 "player": player_s,
                 "target": None,
-                "action": "choose_target"
+                "action": instant.play,
+                "cost": instant.mana_cost
             })
 
 def play_land_legal_actions(player_s, actions):
@@ -44,7 +47,8 @@ def play_land_legal_actions(player_s, actions):
                 "name": land.name,
                 "player": player_s,
                 "target": None,
-                "action": "play_land"
+                "action": land.play,
+                "cost": 0
             })
             
 def tap_land_legal_actions(player_s, actions):
@@ -52,12 +56,13 @@ def tap_land_legal_actions(player_s, actions):
     for land in player_s.land_board:
         if not land.tapped:
             actions.append({
-                "type": "land",
+                "type": "tap land",
                 "id": land.id,
                 "name": land.name,
                 "player": player_s,
                 "target": None,
-                "action": "tap_land"
+                "action": land.tap,
+                "cost": 0
             })
             
 def target_instant_legal_actions(player_s, player_ns, instant_to_target, actions):
@@ -68,9 +73,10 @@ def target_instant_legal_actions(player_s, player_ns, instant_to_target, actions
                 "type": "instant",
                 "id": instant_to_target["id"],  
                 "name": instant_to_target["name"],
-                "player": player_s,
+                "player": instant_to_target["player"],
                 "target": target,
-                "action": "play_instant" 
+                "action": instant_to_target["action"],
+                "cost": instant_to_target["cost"] 
                 })
     return actions
 
@@ -78,14 +84,15 @@ def attack_legal_actions(player_AP,actions):
     
     creatures = player_AP.board
     for creature in creatures:
-        if creature.tapped == False:
+        if creature.tapped == False and creature.attacking == False:
             actions.append({
                 "type": "attack",
-                "id": creature["id"],  
-                "name": creature["name"],
+                "id": creature.id,  
+                "name": creature.name,
                 "player": player_AP,
-                "target": "self",
-                "action": "declare_attack" 
+                "target": None,
+                "action": creature.attack,
+                "cost": 0
                 })
     
 def block_legal_actions(player_AP, player_NAP, actions):
@@ -99,11 +106,12 @@ def block_legal_actions(player_AP, player_NAP, actions):
                 if creature_atk.attacking == True:
                     actions.append({
                         "type": "block",
-                        "id": creature_blk["id"],  
-                        "name": creature_blk["name"],
+                        "id": creature_blk.id,  
+                        "name": creature_blk.name,
                         "player": player_NAP,
-                        "target": creature_atk["id"],
-                        "action": "declare_block" 
+                        "target": creature_atk,
+                        "action": creature_atk.block,
+                        "cost": 0 
                         })
     
 
@@ -161,24 +169,91 @@ def legal_actions(GameState, instant_to_target=None):
         # play instant actions
         play_instant_legal_actions(player_s, actions)
         
+    elif phase == "just attacks":
+        
+        # declare attack actions
+        attack_legal_actions(player_ap, actions)
+        
+    elif phase == "after attack":
+        # tap land actions
+        tap_land_legal_actions(player_s, actions)
+        
+        # play instant actions
+        play_instant_legal_actions(player_s, actions)
+        
+    elif phase == "just blocks":
+        
+        # declare block actions
+        block_legal_actions(player_ap, actions)
+        
+    elif phase == "after block":
+        # tap land actions
+        tap_land_legal_actions(player_s, actions)
+        
+        # play instant actions
+        play_instant_legal_actions(player_s, actions)
+        
+        
+        
+        
+        
 
     return actions
             
             
             
 def choose_action(actions, GameState):
+    
+    # If there are any actions that can be made randomly choose to take random action or not
+    print(f"{GameState.player_S.name}'s priority")
     if actions and random.choice([1,2]) == 1:
         action = random.choice(actions)
         
-        if action.type == "Instant":
+        # If the action is an instant choose the target first
+        if action["type"] == "Instant":
             if action.target == None:
-                action = legal_actions(GameState, instant_to_target=action)
+                actions = legal_actions(GameState, instant_to_target=action)
+                action = random.choice(actions)
                 
+            
+        # Once the first attack declaration is made, only attack declarations can be made    
+        elif action["type"] == "attack" and GameState.player_AP.passed == False:
+            action["action"](action["player"])
+            GameState.phase = "just attacks"
+            action = None
+            
+        # Same but for blocks 
+        elif action["type"] == "block" and GameState.player_NAP.passed == False:
+            action["action"](action["player"]) # adjust for actual declare block function
+            GameState.phase = "just blocks"
+            action = None
+            
         GameState.player_S.passed = False
-        GameState.stack.append(action)
+        GameState.player_S.mana_pool -= action["cost"]
+        print(f"{action["player"].name} plays {action["name"]}")
+        
+        if action != None:
+            GameState.stack.append(action)
+            
+            
+    # If the player choosing to attack or block doesn't, move to after phase where no blcoks or attacks can be declared      
+    elif GameState.phase == "just attacks":
+        GameState.phase = "after attack"
+        GameState.player_AP.passed = False
+        GameState.player_NAP.passed = False
+        GameState.reset_prio = True
+        
+    elif GameState.phase == "just blocks":
+        GameState.phase = "after block"
+        GameState.player_AP.passed = False
+        GameState.player_NAP.passed = False
+        GameState.reset_prio = True
+
+    
         
     else:
         GameState.player_S.passed = True
+        print(f"{GameState.player_S.name} passed")
         
  
     
@@ -186,33 +261,60 @@ def execute_stack(GameState):
     stack = GameState.stack.reverse()
     
     for action in stack:
-        if action["target"] is None:
-            action["action"](None)
-        else:
-            action["action"](action["target"])
+        action["action"](action["player"], action["target"])
+            
+    GameState.player_S = GameState.player_AP
+    GameState.player_NS = GameState.player_NAP
+    GameState.stack = []
         
 
 def change_phase(GameState):
 
     current_phase = GameState.phase
-    en.phase_action[current_phase](GameState)
+    en.phase_actions[current_phase](GameState)
+    GameState.player_S = GameState.player_AP
+    GameState.player_NS = GameState.player_NAP
+
 
 def add_to_stack(GameState):
     
     actions = legal_actions(GameState)
     action = choose_action(actions, GameState)
-    GameState.stack.append(action) 
+    if action:
+        GameState.stack.append(action) 
+    
     
 def main_action(GameState):
     
+    
     add_to_stack(GameState)
     
+    # Execute stack if both players passed and there is anything to execute    
     if GameState.stack and GameState.player_AP.passed and GameState.player_NAP.passed:
         execute_stack(GameState)
-        
+    
+    # Change phase if no stack and both players pass        
     elif not GameState.stack and GameState.player_AP.passed and GameState.player_NAP.passed:
         change_phase(GameState)
     
+    # Keep prio on attacker or blocker during the just attacks/blocks phase 
+    elif GameState.reset_prio == True:
+        GameState.player_S = GameState.player_AP
+        GameState.player_NS = GameState.player_NAP
+        GameState.reset_prio = False
+    
+    # Switch between player adding to the stack
+    else:    
+        GameState.player_S = GameState.player_NS
+        GameState.player_NS = GameState.player_S
+        
+player1 = en.player1
+player2 = en.player2
+
+state = cs.GameState(player_AP=player1,player_NAP=player2,stack=[])
+
+for _ in range(1,10):
+    main_action(state)
     
     
     

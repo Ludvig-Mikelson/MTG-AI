@@ -60,14 +60,21 @@ def begin_phase(state:cs.GameState):
         creature.tapped = False
     
     draw_card(state.player_AP)
+    print("Begin Phase")
 
     
 def main_phase_1(state:cs.GameState):
+    
+    state.player_AP.mana_pool = 0
+    state.player_NAP.mana_pool = 0
     
     state.phase = "main phase 1"
     print(f"{state.player_AP.name} Main Phase 1")
     
 def attack_phase(state:cs.GameState):
+    
+    state.player_AP.mana_pool = 0
+    state.player_NAP.mana_pool = 0
     
     state.phase = "declare attack phase"
     print(f"{state.player_AP.name} declare attack phase")
@@ -84,6 +91,9 @@ def resolve_phase(state:cs.GameState):
     
                 
 def main_phase_2(state:cs.GameState):
+    
+    state.player_AP.mana_pool = 0
+    state.player_NAP.mana_pool = 0
 
     state.phase = "main phase 2"
     print(f"{state.player_AP.name} Main Phase 2")
@@ -174,16 +184,15 @@ def end_phase(playerAP:cs.Player,playerNAP:cs.Player,state:cs.GameState):
     
     
     
-phases = ["begin phase", "main phase 1", 
-          "declare attack phase", "declare block phase", "resolve battle phase", 
-          "main phase 2", "end phase"]
 
 phase_actions = {
-    "first_phase": begin_phase,
+    "first phase": begin_phase,
     "begin phase": main_phase_1,
     "main phase 1": attack_phase,
     "declare attack phase": block_phase,
+    "after attack": block_phase,
     "declare block phase": resolve_phase,
+    "after block": resolve_phase,
     "resolve battle phase": main_phase_2,
     "main phase 2": end_phase,
     "end phase": begin_phase
@@ -191,31 +200,7 @@ phase_actions = {
 
 
 
-def play_game(players: list[cs.Player]):
-    # Initialize the game state
-    state = cs.GameState(players, 1, "beginning")
-    
-    # Loop while all players have life > 0
-    while all(player.life > 0 for player in state.players) and state.turn<20:
-        # Determine the current player and the opponent
-        current_player = state.players[state.turn % len(players)]
-        opp_player = state.players[(state.turn + 1) % len(players)]
-        begin_phase(current_player,opp_player,state)
 
-        # Start turn for the current player
-        main_phase_1(current_player,opp_player, state)
-
-        # Battle phase - attack with creatures if any are on the board
-        if len(current_player.board) > 0:
-            battle_phase(current_player, opp_player)
-
-        main_phase_2(current_player,opp_player, state)
-            
-        end_phase(current_player,opp_player,state)
-            
-
-        
-    print("Game over!")      
 
 
 deck1 = build_random_deck()
@@ -229,7 +214,7 @@ player1 = cs.Player("Bob", start_hand1, deck1, [], [], [], 0, 20)
 player2 = cs.Player("Alice", start_hand2, deck2, [], [], [], 0, 20)
 players = [player1, player2]
 
-play_game(players)
+
     
     
 

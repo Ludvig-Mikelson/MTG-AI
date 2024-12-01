@@ -5,7 +5,7 @@ class Card:
 
 class Player:
     def __init__(self, name: str, hand: list[Card], deck: list[Card], 
-                 board: list[Card], land_board: list[Card], graveyard: list[Card], mana_pool: int, life: int):
+                 board: list[Card], land_board: list[Card], graveyard: list[Card], mana_pool: 0, life: 20):
         self.name = name
         self.hand = hand
         self.deck = deck
@@ -19,14 +19,14 @@ class Player:
         
 class GameState:
     def __init__(self, player_AP: Player, player_NAP: Player, 
-                 turn: int, stack: list):
+                 stack: list):
         self.player_AP = player_AP
         self.player_NAP = player_NAP
         self.player_S = player_AP
         self.player_NS = player_NAP
-        self.turn = turn
         self.stack = stack
-        self.phase = "first phase"  
+        self.phase = "first phase"
+        self.reset_prio = False  
         
         
 class CreatureCard(Card):
@@ -62,20 +62,29 @@ class CreatureCard(Card):
         for effect in self.prowess:
             effect.apply(self, player)        # So all creature effects have to take in creature and player.
         
-    def play(self,player,state):
-        if state.phase == "main phase 1" or "main phase 2":
-            if player.mana_pool >= self.mana_cost:
-                print(f"{player.name} plays {self.name}")
-                player.board.append(self)
-                player.hand.remove(self)
-                player.mana_pool -= self.mana_cost
-                
-                # self.activate_effects(player)     # Because there are no on-play effects
+    def play(self,player):
 
-            else:
-                print(f"Not enough mana to play {self.name}")
+        if player.mana_pool >= self.mana_cost:
+            print(f"{player.name} plays {self.name}")
+            player.board.append(self)
+            player.hand.remove(self)
+            player.mana_pool -= self.mana_cost
+                
+            print(f"{player.name} plays {self.name}")
+
         else:
-            print("Cannot play creature outside Main Phase")
+            print(f"Not enough mana to play {self.name}")
+
+            
+    def attack(self,player):
+        self.attacking = True
+        print(f"{player.name}'s {self.name} declares attack")
+        
+    def block(self,player,attacker):
+        self.blocking = True
+        attacker.blockers.append(self)
+        print(f"{player.name}'s {self.name} declares block on {attacker.name}")
+        
             
     
 
@@ -104,17 +113,14 @@ class LandCard(Card):
         self.tapped = tapped
         self.tap_effects = tap_effects if tap_effects else []
         
-    def play(self,player,state):
-        if state.phase == "main phase 1" or "main phase 2":
-            if player.played_land == False:
-                print(f"{player.name} plays {self.name}")
-                player.land_board.append(self)
-                player.hand.remove(self)
+    def play(self,player):
+        
+        if player.played_land == False:
+            print(f"{player.name} plays {self.name}")
+            player.land_board.append(self)
+            player.hand.remove(self)
+            player.played_land == True
                 
-            else:
-                print(f"Can't play {self.name}, land was already played")
-        else:
-            print("Cannot play land outside Main Phase")        
         
     def tap(self,player):
         if self.tapped == False:
@@ -175,8 +181,8 @@ class EnchantmentCard(Card):
         for effect in self.effects:
             effect.apply(self,target)          
         
-    def play(self,player,state,creaturecard):
-        if state.phase == "main phase 1" or "main phase 2":
+    def play(self,player,creaturecard):
+
             if player.mana_pool >= self.mana_cost:
                 print(f"{player.name} plays {self.name}")
                 creaturecard.auras.append(self)
@@ -189,10 +195,7 @@ class EnchantmentCard(Card):
                 if creature.prowess:
                     for effect in creature.prowess:
                         effect.apply(creature, player)
-            else:
-                print(f"Not enough mana to play {self.name}")
-        else:
-            print("Cannot play creature outside Main Phase")
+
             
         
     
