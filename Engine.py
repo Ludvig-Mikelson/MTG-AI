@@ -106,7 +106,7 @@ def main_phase_1(playerAP:Player,playerNAP:Player,state:GameState):
         random.choice(creatures_hand).play(playerAP,state)
         
     if len(instants_hand) > 0:
-        random.choice(instants_hand).play(playerAP,state,playerNAP)     # The target can be also a creature!
+        random.choice(instants_hand).play(playerAP,state,playerNAP)     # The targets must be set to also include creatures!
                 
 
 def main_phase_2(playerAP:Player,playerNAP:Player,state:GameState):     # Vai ir kaut kas kur ir svarīgi tieši main 1 un main 2? jeb vai nevar vnk phase = main phase ?
@@ -140,6 +140,9 @@ def main_phase_2(playerAP:Player,playerNAP:Player,state:GameState):     # Vai ir
 def battle_phase(player_atk:Player,player_def:Player):
     
     for creature in player_atk.board:
+        if creature.name == "Manifold Mouse":   # buffs no efekta, vai šis stackojas no vairākām?
+            random.choice()
+
         if creature.tapped == False:
             if random.choice([1,1]) == 1:
                 creature.attacking = True
@@ -153,28 +156,41 @@ def battle_phase(player_atk:Player,player_def:Player):
         for blocker in player_def.board:
             if random.choice([1,2]) == 1:
                 to_block = random.choice(attackers)
-                blocker.blocked_creature_id = to_block.id
+                if not (to_block.flying==True and blocker.flying==False):   # only 1 out of 4 cases when cannot block
+                    blocker.blocked_creature_id = to_block.id
+                else:
+                    print("Couldn't block, attacker flying:", to_block.flying, "blocker flying:", blocker.flying)
                 
             
         for attacker in attackers:
             blockers = [blocker for blocker in player_def.board if blocker.blocked_creature_id == attacker.id]
             if blockers:
-                for blocker in blockers:
-                    if blocker.power <= 0:
-                        blocker.power = 0
-                    if attacker.power <= 0:
-                        attacker.power = 0
-                    print(f"{blocker.power}/{blocker.toughness} {blocker.name} is blocking {attacker.power}/{attacker.toughness} {attacker.name}")
+                if (attacker.menace == True and len(blockers) >= 2) or attacker.menace == False:    # checks menace condition
+                    # if menace:
+                    #     needs >1 blocker for this attacker, otherwise no blockers
+                    for blocker in blockers:
+                        if blocker.power <= 0:
+                            blocker.power = 0
+                        if attacker.power <= 0:
+                            attacker.power = 0
+                        print(f"{blocker.power}/{blocker.toughness} {blocker.name} is blocking {attacker.power}/{attacker.toughness} {attacker.name}")
 
-                    bt = blocker.toughness
-                    ap = attacker.power
-                    bp = blocker.power
-                    
-                    blocker.toughness -= ap
-                    attacker.toughness -= bp
-                    attacker.power -= bt
+                        bt = blocker.toughness
+                        ap = attacker.power
+                        bp = blocker.power
+                        
+                        blocker.toughness -= ap
+                        attacker.toughness -= bp
+                        attacker.power -= bt
+
+                    if (attacker.trample==True or attacker.trample_eot==True) and attacker.power>0:    # for remaining power, and doesn't need toughness check?
+                        print(f"{attacker.power}/{attacker.toughness} {attacker.name} deals damage to Player {player_def.name}.")
+                        player_def.life -= attacker.power
+                        print(f"{player_def.name} has {player_def.life} life left")
+                elif attacker.menace == True and len(blockers) == 1:
+                    print(f"One blocker {blockers[0].name} cannot block {attacker.name} with Menace")
             else:
-                print(f"{attacker.power}/{attacker.toughness} {attacker.name} deals damage to the {player_def.name}.")
+                print(f"{attacker.power}/{attacker.toughness} {attacker.name} deals damage to Player {player_def.name}.")
                 player_def.life -= attacker.power
                 print(f"{player_def.name} has {player_def.life} life left")
                 
@@ -202,6 +218,7 @@ def reset_creatures(player: Player):
             creature.blocking = False 
             creature.blocked_creature_id = None
             creature.spell_targeted = False
+            creature.trample_eot = False
 
     # Reset creatures in the player's graveyard
     for creature in player.graveyard:

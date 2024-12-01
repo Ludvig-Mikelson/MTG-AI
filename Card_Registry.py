@@ -16,15 +16,12 @@ class Player:
         self.life = life
         self.played_land = False
 
-# Kā vispār šo darīt, vot nezinu - vajag lai prowess nenotiek pie izspēlēšanas, bet tikai pie instanta piemēram.
-# Bet tad kkā ir jāzina, ka šai kārtij tas jadara, var jau taisīt if-us ar vārdu un tad pielietot efektu. 
-# Jo citi efekti notiek tad kad šo kārti izspēlē, un es nez kā to normāli nošķirt lai nav 10 dažādi if-i...
-# Ko darīt ar izvēles soļiem?? Vot svarīgākais jautājums, jo tādu ir padaudz, piem. manifold mouse ir 2 tādas izvēles.
-# Jebšu, ko darīt ar "target creature" ???
+# Ko darīt ar izvēles soļiem? Vot svarīgākais jautājums, jo tādu ir padaudz, piem. manifold mouse ir 2 tādas izvēles.
+# Jebšu, ko darīt ar "target creature" ?
 
 class CreatureCard(Card):
-    def __init__(self, name: str, mana_cost: int, og_power: int, og_toughness: int, effects=None, deathrattle=None, is_token=False,
-                 auras = [], tapped = True):
+    def __init__(self, name: str, mana_cost: int, og_power: int, og_toughness: int, cast_effects=None, later_effects=None, deathrattle=None, 
+                 is_token=False, auras = [], tapped = True, flying = False, is_mouse = False, trample = False, trample_eot = False, menace = False):
         self.id = str(uuid.uuid4())
         self.name = name
         self.mana_cost = mana_cost
@@ -37,18 +34,24 @@ class CreatureCard(Card):
         self.attacking = False
         self.blocking = False
         self.blocked_creature_id = None
-        self.effects = effects if effects else []       # These are only effects that DON'T activate on placement!
+        self.cast_effects = cast_effects if cast_effects else []        # These are effects that activate ONLY on cast
+        self.later_effects = later_effects if later_effects else []     # These are the conditional effects that must not activate on casting
         self.is_token = is_token
         self.deathrattle = deathrattle if deathrattle else []
         self.auras = auras
         self.tapped = tapped
         self.spell_targeted = False
+        self.flying = flying
+        self.is_mouse = is_mouse
+        self.trample = trample
+        self.trample_eot = trample_eot  # for effects that apply trample only until end of turn
+        self.menace = menace
         
         
-    def activate_effects(self, player):
-        # Trigger the card's on-play effects, for this deck there are none
-        for effect in self.effects:
-            effect.apply(self, player)        # So all creature effects have to take in creature and player.
+    def activate_cast_effects(self, player):
+        # Trigger the card's on-play effects, for this deck only for Manifold Mouse
+        for effect in self.cast_effects:
+            effect.apply(self, player)        # So all creature effects have to take in creature and player, because both could be needed.
         
     def play(self,player,state):
         if state.phase == "main phase 1" or "main phase 2":
@@ -58,7 +61,7 @@ class CreatureCard(Card):
                 player.hand.remove(self)
                 player.mana_pool -= self.mana_cost
                 
-                # self.activate_effects(player)     # Because there are no on-play effects
+                self.activate_cast_effects(player)     # Because there are no on-play effects
 
             else:
                 print(f"Not enough mana to play {self.name}")
@@ -143,30 +146,26 @@ class InstantCard(Card):
                 
             self.activate_effects(target)
 
-            # Trigger them effects for all creatures with said effects:
+            # Trigger them effects for all creatures with cast-spell effects:
             for creature in player.board:
-                for effect in creature.effects:
+                for effect in creature.later_effects:
                     if isinstance(effect, Prowess):
-                        effect.apply(creature, player)
+                        effect.apply(creature, player)  
                     if isinstance(effect, Prowess_Slickshot):
                         effect.apply(creature, player)
-            # Trigger the effects that activate on targeted:
+            # Trigger effects that activate on targeted:
             if isinstance(target, CreatureCard):
-                for effect in target.effects:
-                    if isinstance(effect, Valiant_Heartfire):       
-                        # Šeit vairāki komentāri: 
-                        # 0. Šī metode iespējams ir ne-vispārināma, jo nu sanāk visus šitos efektus aktivizēt iekš instant.play un enchantment, kas nešķiet super gudri, bet laikam šim deckam strādā?
-                        # 1. ja būs vairāk efektu, iespējams nevajag visus čekot pēc tipa, var vnk aktivizēt tos kas ir on-targeted.
-                        # 2. Nezinu kā šis stack-ojas, par to vajag tad kārtīgi padomāt vai viss saiet.
-                        # 3. Jautājums par secību vot stackam, ka tikai nevajag sākumā buffot un tad iet spell effect? Jo nu ja gadījumā tas ir damage, kas reālistiski tā nekad gan nebūs.
-                        effect.apply(target, player)
+                for effect in target.later_effects:
+                    if target in player.hand:       # This activates only if cast on controlled target
+                        if isinstance(effect, Valiant_Heartfire):       
+                            effect.apply(target, player)
 
         else:
             print(f"Not enough mana to play {self.name}")
 
             
             
-            
+# VISS ENCHANTMENT VĒL JĀATJAUNO, bet būs grndrīz vai copy-paste no instant:
 class EnchantmentCard(Card):
     def __init__(self,name:str,mana_cost: int, effects=None, deathrattle=None):
         self.id = str(uuid.uuid4())
@@ -253,15 +252,16 @@ Creature_Card_Registry = {
     #     "mana_cost": 2,
     #     "og_power": 0,
     #     "og_toughness": 4,
-    #     "deathrattle": ["Spawn(\"Small Rock\")"] 
+        # "deathrattle": ["Spawn(\"Small Rock\")"] 
     # },
     "Heartfire Hero": {
         "name": "Heartfire Hero",
         "mana_cost": 1,
         "og_power": 1,
         "og_toughness": 1,
-        "effects": ["Valiant_Heartfire()"],
-        "deathrattle": ["DmgToAny(0)"]  # Damage is defined later
+        "later_effects": ["Valiant_Heartfire()"],
+        "deathrattle": ["DmgToAny(0)"],  # Means damage is defined later
+        "is_mouse": True
     },
     "Monastery Swiftspear": {
         "name": "Monastery Swiftspear",
@@ -269,7 +269,7 @@ Creature_Card_Registry = {
         "og_power": 1,
         "og_toughness": 2,
         "tests": 71,
-        "effects": ["Prowess()"],
+        "later_effects": ["Prowess()"],
         "tapped": False         # This is HASTE! Because that's for starting value
     },
     "Emberheart Challenger": {
@@ -277,23 +277,36 @@ Creature_Card_Registry = {
         "mana_cost": 2,
         "og_power": 2,
         "og_toughness": 2,
-        "effects": ["Prowess()"],
-        "tapped": False
+        "later_effects": ["Prowess()", "Valiant_Emberheart()"],
+        "tapped": False,
+        "is_mouse": True
     },
     "Manifold Mouse": {
         "name": "Manifold Mouse",
         "mana_cost": 2,
         "og_power": 1,
         "og_toughness": 2,
-        "effects": []
+        "cast_effects": ["Offspring(2)"],
+        "later_effects": [],    # šeit jābūt vēl target mouse buff efektam
+        "is_mouse": True
+    },
+    "Manifold Mouse Token": {
+        "name": "Manifold Mouse",
+        "mana_cost": 2,
+        "og_power": 1,
+        "og_toughness": 1,
+        "later_effects": [],    # šeit jābūt vēl target mouse buff efektam
+        "is_mouse": True,
+        "is_token": True
     },
     "Slickshot Show-Off": {
         "name": "Slickshot Show-Off",
         "mana_cost": 2,
         "og_power": 1,
         "og_toughness": 2,
-        "effects": ["Prowess_Slickshot()"],
-        "tapped": False
+        "later_effects": ["Prowess_Slickshot()"],
+        "tapped": False,
+        "flying": True
     }
     
     
@@ -353,12 +366,19 @@ def card_factory(card_name,card_type):
             mana_cost=template["mana_cost"],
             og_power=template["og_power"],
             og_toughness=template["og_toughness"],
-            effects = [eval(effect) for effect in template.get("effects", [])],
+            cast_effects=[eval(effect) for effect in template.get("cast_effects", [])],
+            later_effects=[eval(effect) for effect in template.get("later_effects", [])],
             deathrattle=[eval(deathrattle) for deathrattle in template.get("deathrattle", [])],
             is_token=template.get("is_token", False),
-            tapped=template.get("tapped", True)
-
+            # auras?
+            tapped=template.get("tapped", True),
+            flying=template.get("flying", False),
+            is_mouse=template.get("is_mouse", False),
+            trample=template.get("trample", False),
+            trample_eot=template.get("trample_eot", False),
+            menace=template.get("menace", False)
         )
+    
     elif card_type == "Land":
         template = Land_Card_Registry.get(card_name)
         
@@ -395,13 +415,13 @@ def card_factory(card_name,card_type):
 #         player.mana_pool += self.mana_amount
 #         print(f"{player.name} gains {self.mana_amount} mana! Current mana: {player.mana_pool}")
         
-# class Spawn:
-#     def __init__(self, token = False):
-#         self.token = card_factory(token,"Creature")
+class Spawn:
+    def __init__(self, token_name = False):
+        self.token = card_factory(token_name,"Creature")
     
-#     def apply(self,player):
-#         player.board.append(self.token)
-#         print(f"{player.name} spawns {self.token.name}")
+    def apply(self,player):
+        player.board.append(self.token)
+        print(f"{player.name} spawns {self.token.name}")
         
 class DmgToAny:
     def __init__(self, damage = 0):
@@ -452,11 +472,29 @@ class Prowess_Slickshot:
         creature.toughness += 0
         print(f"{creature.name} got +2/+0 until end of turn from Prowess_Slickshot")
 
-class Valiant_Heartfire:        # Fak, šim vajag aktivizēties arī no Manifold Mouse targeted efekta
+class Valiant_Heartfire:        # Šim vajag aktivizēties arī no Manifold Mouse targeted efekta
     def apply(creature: CreatureCard, player):
         if creature.spell_targeted == False:
             creature.counter_power += 1
             creature.counter_toughness += 1
             creature.spell_targeted = True
+
+class Valiant_Emberheart:
+    def apply(creature: CreatureCard, player):
+        if creature.spell_targeted == False:
+            player.deck.pop()
+            # Jāpieliek, ka var izspēlēt līdz gājiena beigām
+            creature.spell_targeted = True
+
+class Offspring:
+    def __init__(self, mana_cost):
+        self.mana_cost = mana_cost
+    
+    def apply(self, card, player):
+        player.mana_pool -= self.mana_cost
+        offspring = Spawn("Manifold Mouse Token")
+        offspring.apply(player)                     # creates and plays the token
+
+
 
         
