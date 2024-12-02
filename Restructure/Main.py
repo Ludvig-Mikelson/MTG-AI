@@ -29,7 +29,7 @@ def play_instant_legal_actions(player_s, actions):
         if isinstance(instant, cs.InstantCard) and instant.mana_cost <= player_s.mana_pool:
             actions.append({
                 "type": "instant",
-                "id": instant.id,
+                "id": instant,
                 "name": instant.name,
                 "player": player_s,
                 "target": None,
@@ -66,9 +66,11 @@ def tap_land_legal_actions(player_s, actions):
             })
             
 def target_instant_legal_actions(player_s, player_ns, instant_to_target, actions):
-    
+    print("DOES THIS HAPPEN JAAHHAHAHAHAHAHAHAHAHAH")
     if instant_to_target:
         for target in [player_ns, player_s] + player_ns.board + player_s.board:
+            
+            
             actions.append({
                 "type": "instant",
                 "id": instant_to_target["id"],  
@@ -130,7 +132,7 @@ def legal_actions(GameState, instant_to_target=None):
     
     if phase == "main phase 1" or phase == "main phase 2":
         
-        if player_s == player_ap:
+        if player_s == player_ap and not GameState.stack:
             # tap land actions
             tap_land_legal_actions(player_s, actions)
 
@@ -143,7 +145,7 @@ def legal_actions(GameState, instant_to_target=None):
             # play instant actions
             play_instant_legal_actions(player_s, actions)
             
-        elif player_s == player_nap:
+        else:
             # tap land actions
             tap_land_legal_actions(player_s, actions)
             # play instant actions
@@ -209,8 +211,8 @@ def legal_actions(GameState, instant_to_target=None):
         
     elif phase == "just blocks":
         
-        # declare block actions
-        block_legal_actions(player_ap, actions)
+        # declare block acions
+        block_legal_actions(player_ap, player_nap, actions)
         
     elif phase == "after block":
         # tap land actions
@@ -237,10 +239,11 @@ def choose_action(actions, GameState):
         action = random.choice(actions)
         
         # If the action is an instant choose the target first
-        if action["type"] == "Instant":
-            if action.target == None:
+        if action["type"] == "instant":
+            if action["target"] == None:
                 actions = legal_actions(GameState, instant_to_target=action)
                 action = random.choice(actions)
+                action["player"].hand.remove(action["id"])
                 
             
         # Once the first attack declaration is made, only attack declarations can be made    
@@ -251,22 +254,29 @@ def choose_action(actions, GameState):
             
         # Same but for blocks 
         elif action["type"] == "block" and GameState.player_NAP.passed == False:
-            action["action"](action["player"]) # adjust for actual declare block function
+            action["action"](action["player"],action["target"]) # adjust for actual declare block function
             GameState.phase = "just blocks"
             action = None
             
-        elif action["type"] == "land":
-            GameState.player_S.played_land = True
-            action["id"].tapped = True
+        elif action["type"] == "land" or action["type"] == "tap land":
             
-        GameState.player_S.passed = False
-        GameState.player_S.mana_pool -= action["cost"]
+            action["action"](action["player"])
+            GameState.reset_prio = True
+            action = None
+            
         
-        print(f"{action["player"].name}, {action["type"]}")
+            
+            
+            
+        
+        
+        
         
         #print(GameState.phase)
         
         if action != None:
+            GameState.player_S.mana_pool -= action["cost"]
+            print(f"{action["player"].name}, {action["type"]}")
             GameState.stack.append(action)
     
             
@@ -300,11 +310,11 @@ def execute_stack(GameState):
     for action in stack:
         
         if action["target"] is not None:
-        
+            
             print(action["action"])
             action["action"](action["player"], action["target"])
         else:
-        
+            print(action["target"])
             action["action"](action["player"])
             
     GameState.player_S = GameState.player_AP

@@ -192,6 +192,12 @@ def end_phase(state:cs.GameState):
     reset_creatures(state.player_AP)
     reset_creatures(state.player_NAP)
     
+    ap_copy = state.player_AP
+    nap_copy = state.player_NAP
+    
+    state.player_AP = nap_copy
+    state.player_NAP = ap_copy
+    
    
     
     

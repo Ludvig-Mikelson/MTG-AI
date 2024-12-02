@@ -64,16 +64,12 @@ class CreatureCard(Card):
         
     def play(self,player):
 
-        if player.mana_pool >= self.mana_cost:
-            print(f"{player.name} plays {self.name}")
-            player.board.append(self)
-            player.hand.remove(self)
-            player.mana_pool -= self.mana_cost
-                
-            print(f"{player.name} plays {self.name}")
-
-        else:
-            print(f"Not enough mana to play {self.name}")
+        
+        print(f"{player.name} plays {self.name}")
+        player.board.append(self)
+        player.hand.remove(self)
+            
+        
 
             
     def attack(self,player):
@@ -102,9 +98,9 @@ class CreatureCard(Card):
                 aura.leaves_battlefield(player)
                 
 
-    def __str__(self):
+    #def __str__(self):
         # Return a human-readable string when printing the object
-        return f"{self.name} (Mana: {self.mana_cost}, Power: {self.power}, Toughness: {self.toughness}, ID: {self.id})"
+        #return f"{self.name} (Mana: {self.mana_cost}, Power: {self.power}, Toughness: {self.toughness}, ID: {self.id})"
     
 class LandCard(Card):
     def __init__(self,name:str,tap_effects,tapped = False):
@@ -142,27 +138,26 @@ class InstantCard(Card):
             
     def play(self,player,target):
 
-        if player.mana_pool >= self.mana_cost:
-            print(f"{player.name} plays {self.name}")
-            player.hand.remove(self)
-            player.mana_pool -= self.mana_cost
-            player.graveyard.append(self)
+    
+        print(f"{player.name} plays {self.name}")
+        #player.hand.remove(self)
+        player.graveyard.append(self)
                 
-            self.activate_effects(target)
+        self.activate_effects(target)
 
             # Trigger them effects for all creatures with said effects:
-            for creature in player.board:
-                if creature.prowess:
-                    for effect in creature.prowess:
-                        effect.apply(creature, player)
+        for creature in player.board:
+            if creature.prowess:
+                for effect in creature.prowess:
+                    effect.apply(creature, player)
 
             # Trigger the effects that activate on targeted:
+        if isinstance(target, CreatureCard):
             if target.valiant:
                 for effect in target.valiant:
                         effect.apply(target, player)
 
-        else:
-            print(f"Not enough mana to play {self.name}")
+       
 
             
             

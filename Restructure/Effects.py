@@ -21,16 +21,18 @@ class DmgToAny:
     def __init__(self, damage = 0):
         self.damage = damage
         
-    def apply(self, card, target, damage = 0):
+    def apply(self, card, target):
+        print("BADABAAMFMAMFAMFAMFMAMF HEHEHEEHHEHEHEHEHEHHHEH HHIHIHIHIHI")
+        print(card)
+        print(target)
         if isinstance(target,cs.Player):
-            if self.damage > 0:         # The case when damage can be defined at start
-                damage = self.damage
-            target.life -= damage
-            print(f"{card.name} does {damage} damage to {target.name}")
+            
+            target.life -= self.damage
+            print(f"{card.name} does {self.damage} damage to {target.name}")
             print(f"{target.name} has {target.life} life left")
-        elif isinstance(card, cs.CreatureCard):
-            target.toughness -= damage
-            print(f"{card.name} does {damage} damage to {target.name}")
+        elif isinstance(target, cs.CreatureCard):
+            target.toughness -= self.damage
+            print(f"{card.name} does {self.damage} damage to {target.name}")
         else:
             print(f"{target.name} is not a valid target")
 
