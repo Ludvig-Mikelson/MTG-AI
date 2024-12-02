@@ -65,16 +65,22 @@ def main_phase_1(state:cs.GameState):
     
     state.player_AP.mana_pool = 0
     state.player_NAP.mana_pool = 0
+    
+    # Resets passed so that phase doesn't auto end if the first player passes
     state.player_AP.passed = False
     state.player_NAP.passed = False
     
     state.phase = "main phase 1"
     print(f"{state.player_AP.name} Main Phase 1")
-    
+ 
+ 
+# Battle phase is divided in 3 phases, one where AP can declare attacks, one where NAP can declare blocks and one where it resolves
+# Attack and block phases have subphases defined later in the code   
 def attack_phase(state:cs.GameState):
     
     state.player_AP.mana_pool = 0
     state.player_NAP.mana_pool = 0
+    
     state.player_AP.passed = False
     state.player_NAP.passed = False
     
@@ -138,6 +144,7 @@ def end_phase(state:cs.GameState):
     ap_copy = state.player_AP
     nap_copy = state.player_NAP
     
+    # Swaps between AP and NAP aka changed turn
     state.player_AP = nap_copy
     state.player_NAP = ap_copy
     
@@ -168,7 +175,8 @@ def resolve_combat(GameState):
                     blocker.toughness -= ap
                     attacker.toughness -= bp
                     attacker.power -= bt
-
+                
+                # When Trample is ready this can be uncommented
                 #if attacker.trample:
                     #GameState.player_NAP.life -= attacker.power
             else:
@@ -187,7 +195,7 @@ def resolve_combat(GameState):
                 
     
     
-
+# Dictonary for when change_phase function gets called, maps next phase function to the current phase
 phase_actions = {
     "first phase": begin_phase,
     "begin phase": main_phase_1,
@@ -218,8 +226,8 @@ player2 = cs.Player("Alice", start_hand2, deck2, [], [], [], 0, 20)
 players = [player1, player2]
 
 
-# adjust legal action functions to include the actions themselves not string
 
+# Legal action functions, not perfectly optimized, but do seem to work
 def play_creature_legal_actions(player_s, actions):
         # Add creature actions
     for creature in player_s.hand:
@@ -239,7 +247,8 @@ def play_instant_legal_actions(player_s, player_ns, actions):
         # Add instant actions
     for instant in player_s.hand:
         if isinstance(instant, cs.InstantCard) and instant.mana_cost <= player_s.mana_pool:
-            print([player_ns.board + player_s.board])
+            
+            # bad way to solve the fact that monstrous rage can't target face
             if instant.name == "Monstrous Rage" and not player_ns.board + player_s.board:
                 continue
             else:
@@ -283,6 +292,7 @@ def tap_land_legal_actions(player_s, actions):
             
 def target_instant_legal_actions(player_s, player_ns, instant_to_target, actions):
     
+    # again bad fix for monstrous rage
     if instant_to_target["name"] == "Monstrous Rage":
         players = []
     else:
@@ -422,8 +432,10 @@ def legal_actions(GameState, instant_to_target=None):
     elif phase == "just attacks":
         
         # declare attack actions
+        # Only the AP can declare attakcs
         attack_legal_actions(player_ap, actions)
-        
+      
+     # Once attacks are declared, players have a chance to cast instants same with after block   
     elif phase == "after attack":
         # tap land actions
         tap_land_legal_actions(player_s, actions)
@@ -463,9 +475,11 @@ def choose_action(actions, GameState):
         
         # If the action is an instant choose the target first
         if action["type"] == "instant":
+            # I think the None check is not needed
             if action["target"] == None:
                 actions = legal_actions(GameState, instant_to_target=action)
                 action = random.choice(actions)
+                # Remove from hand before playing so that it can't be played multiple times (bad solution)
                 action["player"].hand.remove(action["id"])
                 
             
@@ -480,7 +494,8 @@ def choose_action(actions, GameState):
             action["action"](action["player"],action["target"]) # adjust for actual declare block function
             GameState.phase = "just blocks"
             action = None
-            
+        
+        # playing lands and tapping lands doesn't go to stack so activate it here and give prio to the player_s    
         elif action["type"] == "land" or action["type"] == "tap land":
             
             action["action"](action["player"])
@@ -496,7 +511,7 @@ def choose_action(actions, GameState):
         
         
         #print(GameState.phase)
-        
+        # Adjust this when action can be skipped
         if action != None:
             GameState.player_S.mana_pool -= action["cost"]
             print(f"{action["player"].name}, {action["type"]}")
@@ -527,6 +542,7 @@ def choose_action(actions, GameState):
     
 def execute_stack(GameState):
     #print("Execute Stack")
+    # Stack is executed in reverse order from play order
     stack = list(reversed(GameState.stack))
     
     print(stack)
@@ -541,7 +557,7 @@ def execute_stack(GameState):
             action["action"](action["player"])
             
     
-            
+    # Reset prio and stack        
     GameState.player_S = GameState.player_AP
     GameState.player_NS = GameState.player_NAP
     GameState.stack = []
@@ -552,6 +568,7 @@ def change_phase(GameState):
     
     current_phase = GameState.phase
     phase_actions[current_phase](GameState)
+    
     GameState.player_S = GameState.player_AP
     GameState.player_NS = GameState.player_NAP
 
@@ -560,6 +577,8 @@ def add_to_stack(GameState):
     #print("Add to Stack")
     actions = legal_actions(GameState)
     action = choose_action(actions, GameState)
+    
+    
     if action:
         GameState.stack.append(action) 
     
