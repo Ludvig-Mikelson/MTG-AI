@@ -84,7 +84,7 @@ class CreatureCard(Card):
             
     
 
-    def leaves_battlefield(self, player, player_op):
+    def leaves_battlefield(self, player):
         """Called when the creature leaves the battlefield."""
 
         player.board.remove(self)
@@ -125,11 +125,12 @@ class LandCard(Card):
             self.tapped = True
             
 class InstantCard(Card):
-    def __init__(self,name:str,mana_cost: int, effects=None):
+    def __init__(self,name:str,mana_cost: int, effects=None, targets = "all"):
         self.id = str(uuid.uuid4())
         self.name = name
         self.mana_cost = mana_cost
         self.effects = effects if effects else []
+        self.targets = targets
         
     def activate_effects(self, target):
 

@@ -198,8 +198,50 @@ def end_phase(state:cs.GameState):
     state.player_AP = nap_copy
     state.player_NAP = ap_copy
     
-   
     
+def resolve_combat(GameState):
+    
+    creatures = GameState.player_AP.board
+    
+    for attacker in creatures:
+        if attacker.attacking:
+            if attacker.blockers:
+                for blocker in attacker.blockers:
+                    
+                    
+                    if attacker.power <= 0:
+                        attacker.power = 0
+                    if attacker.toughness <= 0:
+                        attacker.toughness = 0
+                    if blocker.toughness <= 0:
+                        blocker.toughness = 0    
+                        
+                    print(f"{blocker.power}/{blocker.toughness} {blocker.name} is blocking {attacker.power}/{attacker.toughness} {attacker.name}")
+                    
+                    bt = blocker.toughness
+                    ap = attacker.power
+                    bp = blocker.power
+                        
+                    blocker.toughness -= ap
+                    attacker.toughness -= bp
+                    attacker.power -= bt
+
+                #if attacker.trample:
+                    #GameState.player_NAP.life -= attacker.power
+            else:
+                
+                print(f"{attacker.power}/{attacker.toughness} {attacker.name} deals damage to the {GameState.player_NAP.name}.")
+                GameState.player_NAP.life -= attacker.power
+                print(f"{GameState.player_NAP.name} has {GameState.player_NAP.life} life left")
+                
+    for creature in GameState.player_AP.board:
+        if creature.toughness <= 0:
+            creature.leaves_battlefield(GameState.player_AP)
+            
+    for creature in GameState.player_NAP.board:
+        if creature.toughness <= 0:
+            creature.leaves_battlefield(GameState.player_NAP)
+                
     
     
 

@@ -44,7 +44,7 @@ class ApplyBuffs:
         self.toughness_change = toughness_change
     
     def apply(self, card, target):
-        if isinstance(card, cs.CreatureCard):
+        if isinstance(target, cs.CreatureCard):
             if self.power_change != 0:
                 target.power += self.power_change
                 print(f"{card.name} gives {self.power_change} power to {target.name}")
