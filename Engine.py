@@ -1,6 +1,6 @@
 # %% 
 import random
-from Card_Registry import card_factory, Creature_Card_Registry,Land_Card_Registry, Card,CreatureCard,LandCard, Player,InstantCard,Instant_Card_Registry
+from Card_Registry import card_factory, Creature_Card_Registry,Land_Card_Registry, Card,CreatureCard,LandCard, Player,InstantCard,Instant_Card_Registry, EnchantmentCard, Enchantment_Card_Registry
 
 
 class GameState:
@@ -35,7 +35,8 @@ def print_board(player):
 def build_random_deck(deck_size=60):
     card_names = list(Creature_Card_Registry.keys())  
     land_card_names = list(Land_Card_Registry.keys())
-    sorcery_card_names = list(Instant_Card_Registry.keys())
+    instant_card_names = list(Instant_Card_Registry.keys())
+    enchantment_card_names = list(Enchantment_Card_Registry)
     deck = []
     
     for _ in range((deck_size-30)):
@@ -48,10 +49,15 @@ def build_random_deck(deck_size=60):
         card = card_factory(land_card_name,"Land")  
         deck.append(card) 
         
+    for _ in range(20):
+        instant_card_name = random.choice(instant_card_names)  
+        card = card_factory(instant_card_name,"Instant")  
+        deck.append(card)    
+
     for _ in range(10):
-        sorcery_card_name = random.choice(sorcery_card_names)  
-        card = card_factory(sorcery_card_name,"Instant")  
-        deck.append(card)         
+        enchantment_card_name = random.choice(enchantment_card_names)
+        card = card_factory(enchantment_card_name,"Enchantment")  
+        deck.append(card)
     
     random.shuffle(deck)
 
@@ -83,12 +89,13 @@ def begin(playerAP:Player,playerNAP:Player,state:GameState):
     
     draw_card(playerAP)
 
-    
-def main_phase_1(playerAP:Player,playerNAP:Player,state:GameState):
-    
-    state.phase = "main phase 1"
-    print(f"{playerAP.name} Main Phase 1")
-    
+    board=[]
+    for card in playerAP.board:
+        board.append(card.name)
+    print(playerAP.name,"'s board: ", board)
+
+
+def main_phase(playerAP:Player,playerNAP:Player,state:GameState):
     lands = [card for card in playerAP.hand if isinstance(card, LandCard)]
     if playerAP.played_land == False and len(lands) > 0:
         random.choice(lands).play(playerAP,state)
@@ -100,51 +107,71 @@ def main_phase_1(playerAP:Player,playerNAP:Player,state:GameState):
                 land.tap(playerAP)
 
     # For now, play random card
+    ### Creature:
     creatures_hand = [card for card in playerAP.hand if isinstance(card, CreatureCard)]
     instants_hand = [card for card in playerAP.hand if isinstance(card, InstantCard)]
+    enchantments_hand = [card for card in playerAP.hand if isinstance(card, EnchantmentCard)]
     if len(creatures_hand) > 0:
         random.choice(creatures_hand).play(playerAP,state)
         
+    controlled_creatures = [card for card in playerAP.board if isinstance(card, CreatureCard)]
+    enemy_creatures = [card for card in playerNAP.board if isinstance(card, CreatureCard)]
+    
+    ### Instant:
     if len(instants_hand) > 0:
-        random.choice(instants_hand).play(playerAP,state,playerNAP)     # The targets must be set to also include creatures!
-                
+        target_choices = {"controlled_creatures": controlled_creatures,
+                       "enemy_creatures": enemy_creatures,
+                       "all_creatures": controlled_creatures + enemy_creatures,
+                       "all_enemies": enemy_creatures + [playerNAP],
+                       "all_targets": controlled_creatures + enemy_creatures + [playerNAP]
+                       }
+        print(f"instants hand: {[card.name for card in instants_hand]}")
+        chosen_instant = random.choice(instants_hand)
+        print(f"name of chosen instant: {chosen_instant.name}")
+        chosen_instant.play(playerAP,state,target_choices)
 
-def main_phase_2(playerAP:Player,playerNAP:Player,state:GameState):     # Vai ir kaut kas kur ir svarīgi tieši main 1 un main 2? jeb vai nevar vnk phase = main phase ?
+    ### Enchantment:
+    if len(enchantments_hand) > 0:
+        if len(controlled_creatures) > 0:
+            random.choice(enchantments_hand).play(playerAP,state,controlled_creatures)
+        else:
+            print("Cannot play this Enchantment, no targets.")
+
+    
+def main_phase_1(playerAP:Player,playerNAP:Player,state:GameState):
+    
+    state.phase = "main phase 1"
+    print(f"{playerAP.name} Main Phase 1")
+    main_phase(playerAP, playerNAP, state)
+                    
+
+def main_phase_2(playerAP:Player,playerNAP:Player,state:GameState): 
 
     # Vajag pagaidām COPY-PASTE no phase-1 :
     state.phase = "main phase 2"
     print(f"{playerAP.name} Main Phase 2")
-    
-    lands = [card for card in playerAP.hand if isinstance(card, LandCard)]
-    if playerAP.played_land == False and len(lands) > 0:                # NESTRĀDĀ, viena gā
-    
-        random.choice(lands).play(playerAP,state)
-        playerAP.played_land = True
-    
-    if len(playerAP.land_board) > 0:
-        for land in playerAP.land_board:
-            if land.tapped == False:
-                land.tap(playerAP)
-
-    # For now, play random card
-    creatures_hand = [card for card in playerAP.hand if isinstance(card, CreatureCard)]
-    instants_hand = [card for card in playerAP.hand if isinstance(card, InstantCard)]
-    if len(creatures_hand) > 0:
-        random.choice(creatures_hand).play(playerAP,state)
-        
-    if len(instants_hand) > 0:
-        random.choice(instants_hand).play(playerAP,state,playerNAP)
+    main_phase(playerAP, playerNAP, state)
         
         
         
 def battle_phase(player_atk:Player,player_def:Player):
     
+    for creature in player_atk.board:           # Manifold Mouse effect
+        if creature.name == "Manifold Mouse":   
+            buff = random.choice(["trample"])   # UN "double strike" vajag vēl!
+            controlled_mouses = [creature for creature in player_atk.board if creature.is_mouse == True]
+            mouse = random.choice(controlled_mouses)
+            # Valiant effect activation!
+            print(f"Manifold mouse effect gave {buff} to {mouse.name} until EOT.")
+        
+            if buff == "trample":
+                mouse.trample_eot == True
+            elif buff == "double_strike":
+                pass
+        
     for creature in player_atk.board:
-        if creature.name == "Manifold Mouse":   # buffs no efekta, vai šis stackojas no vairākām?
-            random.choice()
-
         if creature.tapped == False:
-            if random.choice([1,1]) == 1:
+            if random.choice([1,1]) == 1:       # Uzbrūk vienmēr ar visiem
                 creature.attacking = True
                 creature.tapped = True
                 print(f"{creature.power}/{creature.toughness} {creature.name} is attacking {player_def.name}")
@@ -159,15 +186,13 @@ def battle_phase(player_atk:Player,player_def:Player):
                 if not (to_block.flying==True and blocker.flying==False):   # only 1 out of 4 cases when cannot block
                     blocker.blocked_creature_id = to_block.id
                 else:
-                    print("Couldn't block, attacker flying:", to_block.flying, "blocker flying:", blocker.flying)
+                    print(f"Couldn't block, attacker {to_block.name} flying: {to_block.flying}, blocker {blocker.name} flying: {blocker.flying}")
                 
             
         for attacker in attackers:
             blockers = [blocker for blocker in player_def.board if blocker.blocked_creature_id == attacker.id]
             if blockers:
                 if (attacker.menace == True and len(blockers) >= 2) or attacker.menace == False:    # checks menace condition
-                    # if menace:
-                    #     needs >1 blocker for this attacker, otherwise no blockers
                     for blocker in blockers:
                         if blocker.power <= 0:
                             blocker.power = 0
@@ -184,7 +209,7 @@ def battle_phase(player_atk:Player,player_def:Player):
                         attacker.power -= bt
 
                     if (attacker.trample==True or attacker.trample_eot==True) and attacker.power>0:    # for remaining power, and doesn't need toughness check?
-                        print(f"{attacker.power}/{attacker.toughness} {attacker.name} deals damage to Player {player_def.name}.")
+                        print(f"{attacker.power}/{attacker.toughness} {attacker.name} deals Trample damage to Player {player_def.name}.")
                         player_def.life -= attacker.power
                         print(f"{player_def.name} has {player_def.life} life left")
                 elif attacker.menace == True and len(blockers) == 1:

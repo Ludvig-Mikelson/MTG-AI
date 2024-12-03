@@ -1,4 +1,5 @@
 import uuid
+import random
 
 class Card:
     pass
@@ -48,10 +49,10 @@ class CreatureCard(Card):
         self.menace = menace
         
         
-    def activate_cast_effects(self, player):
-        # Trigger the card's on-play effects, for this deck only for Manifold Mouse
-        for effect in self.cast_effects:
-            effect.apply(self, player)        # So all creature effects have to take in creature and player, because both could be needed.
+    # def activate_cast_effects(self, player):
+    #     # Trigger the card's on-play effects, for this deck only for Manifold Mouse
+    #     for effect in self.cast_effects:
+    #         effect.apply(self, player)        # So all creature effects have to take in creature and player, because both could be needed.
         
     def play(self,player,state):
         if state.phase == "main phase 1" or "main phase 2":
@@ -61,8 +62,12 @@ class CreatureCard(Card):
                 player.hand.remove(self)
                 player.mana_pool -= self.mana_cost
                 
-                self.activate_cast_effects(player)     # Because there are no on-play effects
+                # Trigger the card's on-play effects, for this deck only for Manifold Mouse
+                for effect in self.cast_effects:
+                    effect.apply(self, player)        # So all creature effects have to take in creature and player, because both could be needed.
 
+                # self.activate_cast_effects(player)
+                
             else:
                 print(f"Not enough mana to play {self.name}")
         else:
@@ -76,18 +81,20 @@ class CreatureCard(Card):
             # Remove token from the player's battlefield
             player.board.remove(self)
             print(f"{self.name} (token) is removed from the game")
-        else:
+        else:            
+            # Check if the card has a DeathRattle effect
+            for deathrattle in self.deathrattle:
+                # deathrattle.apply(self, player)   # Doesn't work if the effects have different specifics
+
+                if isinstance(deathrattle, DmgToAny):       # Heartfire Hero
+                    print(f"!!!!!!!!!!!! Heartfire Hero power for deathrattle, is correct?: {self.og_power + self.counter_power}")
+                    deathrattle.apply(self, player_op, player, damage = self.og_power + self.counter_power)
+            
             player.board.remove(self)
             player.graveyard.append(self)
             self.counter_power = 0
             self.counter_toughness = 0
             print(f"{self.name} leaves the battlefield.")
-            
-            # Check if the card has a DeathRattle effect
-            for deathrattle in self.deathrattle:
-                # deathrattle.apply(self, player)   # Doesn't work if the effects have different specifics
-                if isinstance(deathrattle, DmgToAny):       # Heartfire Hero
-                    deathrattle.apply(self, player_op, self.power)
                 
         if len(self.auras) > 0:
             for aura in self.auras:
@@ -131,82 +138,123 @@ class InstantCard(Card):
         self.mana_cost = mana_cost
         self.effects = effects if effects else []
         
-    def activate_effects(self, target):
+    # def activate_effects(self, target, player):
 
-        for effect in self.effects:
-            effect.apply(self,target)   
+    #     for effect in self.effects:
+    #         effect.apply(self,target, player)   
             
-    def play(self,player,state,target):
+    def play(self,player,state,target_choices):
+        if self.name == "Lightning strike":
+            target = random.choice(target_choices["all_enemies"])
+        elif self.name == "Shock":
+            target = random.choice(target_choices["all_enemies"])
 
-        if player.mana_pool >= self.mana_cost:
-            print(f"{player.name} plays {self.name}")
-            player.hand.remove(self)
-            player.mana_pool -= self.mana_cost
-            player.graveyard.append(self)
-                
-            self.activate_effects(target)
+        elif self.name == "Monstrous Rage":
+            targets = target_choices["controlled_creatures"]
+            if targets:
+                target = random.choice(targets)    # Technically can target anyone, but putting in only reasonable options.
+            else:
+                print("Cannot play this card, no targets.")
+                target = None
 
-            # Trigger them effects for all creatures with cast-spell effects:
-            for creature in player.board:
-                for effect in creature.later_effects:
-                    if isinstance(effect, Prowess):
-                        effect.apply(creature, player)  
-                    if isinstance(effect, Prowess_Slickshot):
-                        effect.apply(creature, player)
-            # Trigger effects that activate on targeted:
-            if isinstance(target, CreatureCard):
-                for effect in target.later_effects:
-                    if target in player.hand:       # This activates only if cast on controlled target
-                        if isinstance(effect, Valiant_Heartfire):       
-                            effect.apply(target, player)
-
+        elif self.name == "Might of the Meek":
+            targets = target_choices["controlled_creatures"]
+            if targets:
+                target = random.choice(targets)
+            else:
+                print("Cannot play this card, no targets.")
+                target = None
         else:
-            print(f"Not enough mana to play {self.name}")
+            print("ERROR: name for Instant not in options")
+
+        if target:
+            if player.mana_pool >= self.mana_cost:
+                print(f"{player.name} plays {self.name}")
+                player.hand.remove(self)
+                player.mana_pool -= self.mana_cost
+                player.graveyard.append(self)
+                    
+                # self.activate_effects(target, player)
+
+                for effect in self.effects:             # Activating all the spell's effects right here
+                    effect.apply(self, target, player)   
+
+                # Trigger them effects for all creatures with cast-spell effects:
+                for creature in player.board:
+                    for effect in creature.later_effects:
+                        if isinstance(effect, Prowess):
+                            effect.apply(creature, player)  
+                        if isinstance(effect, Prowess_Slickshot):
+                            effect.apply(creature, player)
+                # Trigger effects that activate on targeted:
+                if isinstance(target, CreatureCard):
+                    for effect in target.later_effects:
+                        if target in player.hand:       # This activates only if cast on controlled target
+                            if isinstance(effect, Valiant_Heartfire):       
+                                effect.apply(target, player)
+                            if isinstance(effect, Valiant_Emberheart):
+                                effect.apply(target, player)
+
+            else:
+                print(f"Not enough mana to play {self.name}")
 
             
             
-# VISS ENCHANTMENT VĒL JĀATJAUNO, bet būs grndrīz vai copy-paste no instant:
 class EnchantmentCard(Card):
-    def __init__(self,name:str,mana_cost: int, effects=None, deathrattle=None):
+    def __init__(self,name:str,mana_cost: int, effects=None):
         self.id = str(uuid.uuid4())
         self.name = name
         self.mana_cost = mana_cost
         self.effects = effects if effects else []
-        self.deathrattle = deathrattle if deathrattle else []
+        # self.deathrattle = deathrattle if deathrattle else []
         
-    def activate_effects(self, target):
+    # def activate_effects(self, target):
 
-        for effect in self.effects:
-            effect.apply(self,target)          
+    #     for effect in self.effects:
+    #         effect.apply(self,target)          
         
-    def play(self,player,state,creaturecard):
-        if state.phase == "main phase 1" or "main phase 2":
+    def play(self,player,state,target_creature):
+        if self.name == "Demonic Ruckus":
             if player.mana_pool >= self.mana_cost:
                 print(f"{player.name} plays {self.name}")
-                creaturecard.auras.append(self)
                 player.hand.remove(self)
                 player.mana_pool -= self.mana_cost
-                
-                self.activate_effects(player)
+                target = random.choice(target_creature)
+                # player.graveyard.append(self)
+                    
+                # self.activate_effects(target, player)
 
-                # Trigger Prowess for all creatures with this effect
-                # NOT UPDATED! :
+                for effect in self.effects:             # Activating all the spell's effects right here
+                    effect.apply(self, target, player)   
+
+                # Trigger them effects for all creatures with cast-spell effects:
                 for creature in player.board:
-                    for effect in creature.effects:
+                    for effect in creature.later_effects:
                         if isinstance(effect, Prowess):
-                            effect.apply(creature)
+                            effect.apply(creature, player)  
+                        if isinstance(effect, Prowess_Slickshot):
+                            effect.apply(creature, player)
+                # Trigger effects that activate on targeted:
+                if isinstance(target, CreatureCard):
+                    for effect in target.later_effects:
+                        if target in player.hand:       # This activates only if cast on controlled target
+                            if isinstance(effect, Valiant_Heartfire):       
+                                effect.apply(target, player)
+                            if isinstance(effect, Valiant_Emberheart):
+                                effect.apply(target, player)
+
             else:
                 print(f"Not enough mana to play {self.name}")
         else:
-            print("Cannot play creature outside Main Phase")
+            print("ERROR: name for Enchantment not in options")
             
         
     
-    def leaves_battlefield(self, player):
-        self.activate_effects(player)
-        player.board.remove(self)
-        player.graveyard.append(self)
-        print(f"{self.name} leaves the battlefield.")
+    # def leaves_battlefield(self, player):
+    #     self.activate_effects(player)
+    #     player.board.remove(self)
+    #     player.graveyard.append(self)
+    #     print(f"{self.name} leaves the battlefield.")
         
         
 
@@ -291,7 +339,7 @@ Creature_Card_Registry = {
         "is_mouse": True
     },
     "Manifold Mouse Token": {
-        "name": "Manifold Mouse",
+        "name": "Manifold Mouse Token",
         "mana_cost": 2,
         "og_power": 1,
         "og_toughness": 1,
@@ -308,8 +356,6 @@ Creature_Card_Registry = {
         "tapped": False,
         "flying": True
     }
-    
-    
 }
 
 
@@ -323,9 +369,7 @@ Land_Card_Registry = {
     #     "name": "Rockface Village",
     #     "tap_effects": ["GainManaEffect()"] ,   # Un vēl 2 alternatīvas ko var darīt
     #     "tapped": False 
-    # }
-    
-    
+    # } 
 }
 
 Instant_Card_Registry = {
@@ -343,11 +387,21 @@ Instant_Card_Registry = {
         "name": "Monstrous Rage",
         "mana_cost": 1,
         "effects": ["ApplyBuffs(2,0)"]  # Bet šim jābūt tikai līdz gājiena beigām, un vēl citi efekti ir.
+    },
+    "Might of the Meek": {
+        "name": "Might of the Meek",
+        "mana_cost": 1,
+        "effects": ["Might_of_the_Meek()"]
     }
-    
-    
 }
 
+Enchantment_Card_Registry = {
+    "Demonic Ruckus": {
+        "name": "Demonic Ruckus",
+        "mana_cost": 2,
+        "effects": ["Demonic_Aura()"]
+    }
+}
 
         
 
@@ -370,7 +424,7 @@ def card_factory(card_name,card_type):
             later_effects=[eval(effect) for effect in template.get("later_effects", [])],
             deathrattle=[eval(deathrattle) for deathrattle in template.get("deathrattle", [])],
             is_token=template.get("is_token", False),
-            # auras?
+            auras=template.get("auras", []),
             tapped=template.get("tapped", True),
             flying=template.get("flying", False),
             is_mouse=template.get("is_mouse", False),
@@ -402,18 +456,33 @@ def card_factory(card_name,card_type):
             mana_cost=template["mana_cost"],
             effects=[eval(effects) for effects in template.get("effects", [])]
         )      
+    
+    elif card_type == "Enchantment":
+        template = Enchantment_Card_Registry.get(card_name)
+         
+        if not template:
+            raise ValueError(f"Card '{card_name}' is not in the registry.")   
+        
+        return EnchantmentCard(
+            name=template["name"],
+            mana_cost=template["mana_cost"],
+            effects=[eval(effects) for effects in template.get("effects", [])]
+        )   
+    
+    else:
+        print("ERROR: CardFactory, no such type")
         
 
 
 
-# class GainManaEffect:
-#     def __init__(self, mana_amount=1):
-#         self.mana_amount = mana_amount
+class GainManaEffect:
+    def __init__(self, mana_amount=1):
+        self.mana_amount = mana_amount
 
-#     def apply(self, player):
-#         # This effect adds mana to the player's mana pool
-#         player.mana_pool += self.mana_amount
-#         print(f"{player.name} gains {self.mana_amount} mana! Current mana: {player.mana_pool}")
+    def apply(self, player):
+        # This effect adds mana to the player's mana pool
+        player.mana_pool += self.mana_amount
+        print(f"{player.name} gains {self.mana_amount} mana! Current mana: {player.mana_pool}")
         
 class Spawn:
     def __init__(self, token_name = False):
@@ -427,14 +496,16 @@ class DmgToAny:
     def __init__(self, damage = 0):
         self.damage = damage
         
-    def apply(self, card, target, damage = 0):
+    def apply(self, card, target, player, damage = 0):          # self nāk no DmgToAny inita, card ir selfs? ko padod instantā izsaukšana.
         if isinstance(target,Player):
             if self.damage > 0:         # The case when damage can be defined at start
                 damage = self.damage
             target.life -= damage
             print(f"{card.name} does {damage} damage to {target.name}")
             print(f"{target.name} has {target.life} life left")
-        elif isinstance(card, CreatureCard):
+        elif isinstance(target, CreatureCard):
+            if self.damage > 0:         # The case when damage can be defined at start
+                damage = self.damage
             target.toughness -= damage
             print(f"{card.name} does {damage} damage to {target.name}")
         else:
@@ -447,26 +518,23 @@ class ApplyBuffs:
         self.power_change = power_change
         self.toughness_change = toughness_change
     
-    def apply(self, card, target):
-        if isinstance(card, CreatureCard):
-            if self.power_change != 0:
-                target.power += self.power_change
-                print(f"{card.name} gives {self.power_change} power to {target.name}")
-            if self.toughness_change != 0:
-                target.toughness += self.toughness_change
-                print(f"{card.name} gives {self.toughness_change} toughness to {target.name}")
+    def apply(self, card, target, player):
+        if isinstance(target, CreatureCard):
+            target.power += self.power_change
+            target.toughness += self.toughness_change
+            print(f"{card.name} gives +{self.power_change}/+{self.toughness_change} to {target.name}")
         else:
             print(f"{target.name} is not a valid target")
 
 class Prowess:
-    def apply(creature: CreatureCard, player):
+    def apply(self, creature: CreatureCard, player):
         # Apply the +1/+1 effect to the creature
         creature.power += 1
         creature.toughness += 1
         print(f"{creature.name} got +1/+1 until end of turn from Prowess")
 
 class Prowess_Slickshot: 
-    def apply(creature: CreatureCard, player):
+    def apply(self, creature: CreatureCard, player):
         # Apply the +2/+0 effect to the creature
         creature.power += 2
         creature.toughness += 0
@@ -474,27 +542,60 @@ class Prowess_Slickshot:
 
 class Valiant_Heartfire:        # Šim vajag aktivizēties arī no Manifold Mouse targeted efekta
     def apply(creature: CreatureCard, player):
+        print("Valiant Heartfire called")
         if creature.spell_targeted == False:
             creature.counter_power += 1
             creature.counter_toughness += 1
             creature.spell_targeted = True
+            print(f"Valiant Heartfire buffed {creature.name}")
+
 
 class Valiant_Emberheart:
     def apply(creature: CreatureCard, player):
+        print("Valiant Emberheart called")
         if creature.spell_targeted == False:
             player.deck.pop()
             # Jāpieliek, ka var izspēlēt līdz gājiena beigām
             creature.spell_targeted = True
+            print(f"Valiant Emberheart activated from {creature.name}")
 
 class Offspring:
     def __init__(self, mana_cost):
         self.mana_cost = mana_cost
     
     def apply(self, card, player):
-        player.mana_pool -= self.mana_cost
-        offspring = Spawn("Manifold Mouse Token")
-        offspring.apply(player)                     # creates and plays the token
+        if player.mana_pool >= self.mana_cost:
+            if random.choice([0,1]) == 1:
+                print(f"{player.name} used Offspring")
+                player.mana_pool -= self.mana_cost
+                offspring = Spawn("Manifold Mouse Token")
+                offspring.apply(player)                     # creates and plays the token
 
+class Might_of_the_Meek:
+    def apply(self, card, target: CreatureCard, player: Player):
+        if isinstance(target, CreatureCard):
+            target.trample_eot = True
+            controlled_mouses = [creature for creature in player.board if creature.is_mouse == True]
+            print(f"{card.name} gave Trample to {target.name} until EOT. ")
+            if controlled_mouses:
+                target.power += 1
+                print(f"and {target.name} also received +1/+0 from {card.name} since {player.name} is controlling a Mouse")
+        else:
+            print(f"{target.name} is not a valid target")
+
+class Demonic_Aura:
+    def apply(self, card, creature: CreatureCard, player: Player):    # self?
+        creature.counter_power += 1         # So it could be a perma buff
+        creature.counter_toughness += 1
+        creature.menace = True              # Both also permanent
+        creature.trample = True
+        creature.auras += [Demonic_Aura]
+        print(f"{card.name} buffed and applied an Aura to {creature.name}")
+
+    def leaves_battlefield(player):
+        # draw_card(player)
+                        # vajag draw_card, bet laikam ne šeit, bet enginā.
+        print(f"{player.name}'s Demonic Aura left the battlefield, needs to draw a card.")
 
 
         

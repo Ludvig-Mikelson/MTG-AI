@@ -58,5 +58,51 @@ compleate choosing function
 if time, compleate gammstate -> Matrix/Vector function 
 
 
-    
+##########
+####
+#
 
+Alberts 0300 03.12:
+
+Effects:  (X nozīmē pabeigts, x ka gandrīz)
+
+Creatures:
+
+    X  Heartfire Hero Valiant, 
+    X  Deathrattle  jāpārbauda
+    X  Haste x3
+    X  Prowess x2
+    Valiant Emberheart, jāpieliek visur kur Valiant
+    izskatās, ka Valiant-i neizsaucas!
+    x  Manifold Mouse Offspring, jāpieliek izvēle par izmantošanu.
+    novērojums - Mouse Token iekļūst arī parastajā hand, nav ok.
+    x  begin of combat target buff - Double strike
+    X  Flying
+    X  Prowess Slickshot
+    Slickshot plot (?)
+
+    negative toughness buffs opponent's strength in combat, needs fixing
+
+Instants:
+
+    X  Trample, EOT
+    X  buff if controlling a Mouse
+    X  buff until EOT
+    monster role token
+
+    ja lightning nogalina creature, to vajag uzreiz noņemt, citādi tā vēl bloķē uzbrukumu.
+
+Enchantment:
+
+    X  buff,
+    X  Menace,
+    deathrattle - draw card
+
+jautājumi:
+    1) Var stackoties auras, vne?
+    2) vai kā auru pievienot kārti, vai efektu Demonic_Aura?
+    3) kas ar graveyard aurām, kurā brīdī? (jāsačinī vnk)
+
+
+jautājumi:
+par trample mechanics, piem. 5/5 + trample tiek bloķēts ar 5/3.
