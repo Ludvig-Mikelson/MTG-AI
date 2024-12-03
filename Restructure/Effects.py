@@ -34,6 +34,7 @@ class DmgToAny:
             target.toughness -= self.damage
             print(f"{card.name} does {self.damage} damage to {target.name}")
         else:
+            ""
             print(f"{target.name} is not a valid target")
 
 # Mēģināju pēc analoģijas interes pēc pievienot power/toughness mainītāju, kas strādā gan ar +, gan -. 
@@ -52,6 +53,7 @@ class ApplyBuffs:
                 target.toughness += self.toughness_change
                 print(f"{card.name} gives {self.toughness_change} toughness to {target.name}")
         else:
+            ""
             print(f"{target.name} is not a valid target")
 
 class Prowess:

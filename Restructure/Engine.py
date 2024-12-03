@@ -39,7 +39,9 @@ def draw_card(player):
         player.hand.append(player.deck.pop())  
         print(f"{player.name} draws a card")   
     else:
+        "g"
         print("No more cards")
+        
     hand=[]
     for card in player.hand:
         hand.append(card.name)
@@ -222,8 +224,8 @@ start_hand2 = deck2[:7]
 deck1 = deck1[7:]
 deck2 = deck2[7:]
     
-player1 = cs.Player("Bob", start_hand1, deck1, [], [], [], 0, 20)
-player2 = cs.Player("Alice", start_hand2, deck2, [], [], [], 0, 20)
+player1 = cs.Player("Bob", start_hand1, deck1, [], [], [], 0, 5)
+player2 = cs.Player("Alice", start_hand2, deck2, [], [], [], 0, 5)
 players = [player1, player2]
 
 
@@ -485,25 +487,43 @@ class GameState:
         self.player_S = player_AP
         self.player_NS = player_NAP
         self.stack = stack
-        self.phase = "first phase"
+        self.phase = "main phase 1"
         self.reset_prio = False
         self.winner = None
         
-    def get_result(self):
-        
-        if self.winner == self.player_AP:
-            return +1
-        elif self.winner == self.player_NAP:
-            return -1
-        return 0
-        
+    def get_result(self, ai_player):
+        if self.player_AP == ai_player:
+            if self.player_NAP.life <= 0:
+                print(f"AI wins: Opponent life={self.player_NAP.life}")
+                return +1  # AI wins
+            elif self.player_AP.life <= 0:
+                print(f"AI loses: AI life={self.player_AP.life}")
+                return -1  # AI loses
+        else:
+            if self.player_AP.life <= 0:
+                print(f"AI wins: Opponent life={self.player_AP.life}")
+                return +1  # AI wins
+            elif self.player_NAP.life <= 0:
+                print(f"AI loses: AI life={self.player_NAP.life}")
+                return -1  # AI loses
+        print("Game continues.")
+        return 0  # Game is not over
+    
     def is_terminal(self):
-        return self.winner is not None
+        if self.player_AP.life <= 0 or self.player_NAP.life <= 0:
+            print(f"Terminal state reached: player_AP.life={self.player_AP.life}, player_NAP.life={self.player_NAP.life}")
+            return True
+        return False
         
     def determine_winner(self):
+        print(self.player_AP.life)
+        print(self.player_NAP.life)
+        
         if self.player_AP.life <= 0:
+            print("did it go here")
             self.winner = self.player_NAP
         elif self.player_NAP.life <= 0:
+            print("did it go down here")
             self.winner = self.player_AP
         else:
             self.winner = None 
@@ -623,6 +643,7 @@ class GameState:
             play_instant_legal_actions(player_s, player_ns, actions)
             
             
+        print(f"Legal actions for {self.phase}: {actions}")  
             
         if not actions:
             actions = [False]
@@ -631,26 +652,23 @@ class GameState:
         return actions
     
     def execute_action(self,action):
-    #print("Main Action")
-    
-        if self.player_AP.life <= 0:
-            self.winner = self.player_NAP.life
+        
+        
+
+            if self.phase in ["begin phase", "end phase", "first phase"]:
+                change_phase(self)
             
-        elif self.player_NAP.life <= 0:
-            self.winner = self.player_AP.life
-            
-        else:
-            
+            print(f"Executing action: {action}")
             choose_action(action,self)
             
             # Execute stack if both players passed and there is anything to execute    
             if self.stack and self.player_AP.passed and self.player_NAP.passed:
-                #print("Execute stack if both players passed")
+                print("Executing stack as both players passed.")
                 execute_stack(self)
                 
             # Change phase if no stack and both players pass        
             elif not self.stack and self.player_AP.passed and self.player_NAP.passed:
-                #print("Change Phase if both players passes and no actions")
+                print(f"Changing phase from {self.phase}.")
                 
                 if self.phase == "resolve battle phase":
                     resolve_combat(self)
@@ -659,7 +677,7 @@ class GameState:
             
             # Keep prio on attacker or blocker during the just attacks/blocks phase 
             elif self.reset_prio == True:
-                #print("prio is reset")
+                print("Resetting priority to AP.")
 
                 self.player_S = self.player_AP
                 self.player_NS = self.player_NAP
@@ -670,7 +688,7 @@ class GameState:
             # Switch between player adding to the stack
             else:
 
-                #print("Prio is switched")
+                print("Switching priority.")
             
                 self.player_S_copy = self.player_NS
                 self.player_NS_copy = self.player_S
@@ -679,6 +697,6 @@ class GameState:
                 self.player_NS = self.player_NS_copy
     
     
-
+            self.determine_winner()
         
     
