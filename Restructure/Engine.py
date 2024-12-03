@@ -3,6 +3,7 @@ import Classes as cs
 import Effects as ef
 import Card_Registry as cr
 import random
+import copy
 
 
 
@@ -46,7 +47,7 @@ def draw_card(player):
         
 
     
-def begin_phase(state:cs.GameState):
+def begin_phase(state):
     state.player_AP.mana_pool = 0
     state.player_NAP.mana_pool = 0    
     state.phase = "begin phase"
@@ -61,7 +62,7 @@ def begin_phase(state:cs.GameState):
     print("Begin Phase")
 
     
-def main_phase_1(state:cs.GameState):
+def main_phase_1(state):
     
     state.player_AP.mana_pool = 0
     state.player_NAP.mana_pool = 0
@@ -76,7 +77,7 @@ def main_phase_1(state:cs.GameState):
  
 # Battle phase is divided in 3 phases, one where AP can declare attacks, one where NAP can declare blocks and one where it resolves
 # Attack and block phases have subphases defined later in the code   
-def attack_phase(state:cs.GameState):
+def attack_phase(state):
     
     state.player_AP.mana_pool = 0
     state.player_NAP.mana_pool = 0
@@ -87,14 +88,14 @@ def attack_phase(state:cs.GameState):
     state.phase = "declare attack phase"
     print(f"{state.player_AP.name} declare attack phase")
     
-def block_phase(state:cs.GameState):
+def block_phase(state):
     state.player_AP.passed = False
     state.player_NAP.passed = False
     
     state.phase = "declare block phase"
     print(f"{state.player_AP.name} declare block phase")    
     
-def resolve_phase(state:cs.GameState):
+def resolve_phase(state):
     state.player_AP.passed = False
     state.player_NAP.passed = False
     
@@ -102,7 +103,7 @@ def resolve_phase(state:cs.GameState):
     print(f"{state.player_AP.name} resolve battle phase")  
     
                 
-def main_phase_2(state:cs.GameState):
+def main_phase_2(state):
     state.player_AP.passed = False
     state.player_NAP.passed = False
     
@@ -135,7 +136,7 @@ def reset_creatures(player: cs.Player):
             creature.blocking = False
             creature.blocked_creature_id = None
             
-def end_phase(state:cs.GameState):
+def end_phase(state):
     state.phase = "end phase"
     
     reset_creatures(state.player_AP)
@@ -244,23 +245,34 @@ def play_creature_legal_actions(player_s, actions):
 
 
 def play_instant_legal_actions(player_s, player_ns, actions):
+
+    targets = player_ns.board + player_s.board + [player_s, player_ns]
+    
+            
+        
+        
+        
         # Add instant actions
     for instant in player_s.hand:
         if isinstance(instant, cs.InstantCard) and instant.mana_cost <= player_s.mana_pool:
+            if instant.name == "Monstrous Rage":    
+                targets = player_ns.board + player_s.board
             
             # bad way to solve the fact that monstrous rage can't target face
             if instant.name == "Monstrous Rage" and not player_ns.board + player_s.board:
                 continue
+            
             else:
-                actions.append({
-                    "type": "instant",
-                    "id": instant,
-                    "name": instant.name,
-                    "player": player_s,
-                    "target": None,
-                    "action": instant.play,
-                    "cost": instant.mana_cost
-                })
+                for target in targets:
+                    actions.append({
+                        "type": "instant",
+                        "id": instant,
+                        "name": instant.name,
+                        "player": player_s,
+                        "target": target,
+                        "action": instant.play,
+                        "cost": instant.mana_cost
+                    })
 
 def play_land_legal_actions(player_s, actions):
     
@@ -349,136 +361,21 @@ def block_legal_actions(player_AP, player_NAP, actions):
                         })
     
 
-def legal_actions(GameState, instant_to_target=None):
-    actions = []
-    player_ns = GameState.player_NS
-    player_s = GameState.player_S
-    phase = GameState.phase
-    player_ap = GameState.player_AP
-    player_nap = GameState.player_NAP
 
-    # target instant actions
-    if instant_to_target:
-        target_instant_legal_actions(player_s, player_ns, instant_to_target, actions)
-        return actions
-    
-    if phase == "main phase 1" or phase == "main phase 2":
-        
-        if player_s == player_ap and not GameState.stack:
-            # tap land actions
-            tap_land_legal_actions(player_s, actions)
-
-            # play land actions
-            play_land_legal_actions(player_s, actions)
-            
-            # play creature actions
-            play_creature_legal_actions(player_s, actions)
-            
-            # play instant actions
-            play_instant_legal_actions(player_s, player_ns, actions)
-            
-        else:
-            # tap land actions
-            tap_land_legal_actions(player_s, actions)
-            # play instant actions
-            play_instant_legal_actions(player_s, player_ns, actions)
-            
-        
-    elif phase == "declare attack phase":
-        
-        if player_s == player_ap:
-            # tap land actions
-            tap_land_legal_actions(player_s, actions)
-            
-            # play instant actions
-            play_instant_legal_actions(player_s, player_ns, actions)
-            
-            # declare attack actions
-            attack_legal_actions(player_ap, actions)
-            
-        elif player_s == player_nap:
-            # tap land actions
-            tap_land_legal_actions(player_s, actions)
-            # play instant actions
-            play_instant_legal_actions(player_s, player_ns, actions)
-    
-    elif phase == "declare block phase":
-        
-        if player_s == player_ap:
-            # tap land actions
-            tap_land_legal_actions(player_s, actions)
-            
-            # play instant actions
-            play_instant_legal_actions(player_s, player_ns, actions)
-            
-        elif player_s == player_nap:
-            # tap land actions
-            tap_land_legal_actions(player_s, actions)
-            
-            # play instant actions
-            play_instant_legal_actions(player_s, player_ns, actions)
-            
-            # declare block acions
-            block_legal_actions(player_ap, player_nap, actions)
-        
-         
-    elif phase == "resolve battle phase":
-        # tap land actions
-        tap_land_legal_actions(player_s, actions)
-        
-        # play instant actions
-        play_instant_legal_actions(player_s, player_ns, actions)
-        
-    elif phase == "just attacks":
-        
-        # declare attack actions
-        # Only the AP can declare attakcs
-        attack_legal_actions(player_ap, actions)
-      
-     # Once attacks are declared, players have a chance to cast instants same with after block   
-    elif phase == "after attack":
-        # tap land actions
-        tap_land_legal_actions(player_s, actions)
-        
-        # play instant actions
-        play_instant_legal_actions(player_s, player_ns, actions)
-        
-    elif phase == "just blocks":
-        
-        if player_s == player_nap:
-            # declare block acions
-            block_legal_actions(player_ap, player_nap, actions)
-        
-    elif phase == "after block":
-        # tap land actions
-        tap_land_legal_actions(player_s, actions)
-        
-        # play instant actions
-        play_instant_legal_actions(player_s, player_ns, actions)
-        
-        
-        
-        
-        
-
-    return actions
             
             
             
-def choose_action(actions, GameState):
+def choose_action(action, GameState):
     #print("Choose Action")
     
     # If there are any actions that can be made randomly choose to take random action or not
     print(f"{GameState.player_S.name}'s priority")
-    if actions:
-        action = random.choice(actions)
+    if action:
+        
         
         # If the action is an instant choose the target first
         if action["type"] == "instant":
-            # I think the None check is not needed
-            if action["target"] == None:
-                actions = legal_actions(GameState, instant_to_target=action)
-                action = random.choice(actions)
+        
                 # Remove from hand before playing so that it can't be played multiple times (bad solution)
                 action["player"].hand.remove(action["id"])
                 
@@ -504,12 +401,6 @@ def choose_action(actions, GameState):
             
         
             
-            
-            
-        
-        
-        
-        
         #print(GameState.phase)
         # Adjust this when action can be skipped
         if action != None:
@@ -573,60 +464,219 @@ def change_phase(GameState):
     GameState.player_NS = GameState.player_NAP
 
 
-def add_to_stack(GameState):
+#def add_to_stack(GameState):
     #print("Add to Stack")
-    actions = legal_actions(GameState)
-    action = choose_action(actions, GameState)
+    #actions = legal_actions(GameState)
+    #action = choose_action(actions, GameState)
     
     
-    if action:
-        GameState.stack.append(action) 
+    #if action:
+        #GameState.stack.append(action) 
     
     
-def main_action(GameState):
+
+
+
+class GameState:
+    def __init__(self, player_AP: cs.Player, player_NAP: cs.Player, 
+                 stack: list):
+        self.player_AP = player_AP
+        self.player_NAP = player_NAP
+        self.player_S = player_AP
+        self.player_NS = player_NAP
+        self.stack = stack
+        self.phase = "first phase"
+        self.reset_prio = False
+        self.winner = None
+        
+    def get_result(self):
+        
+        if self.winner == self.player_AP:
+            return +1
+        elif self.winner == self.player_NAP:
+            return -1
+        return 0
+        
+    def is_terminal(self):
+        return self.winner is not None
+        
+    def determine_winner(self):
+        if self.player_AP.life <= 0:
+            self.winner = self.player_NAP
+        elif self.player_NAP.life <= 0:
+            self.winner = self.player_AP
+        else:
+            self.winner = None 
+            
+            
+    def copy(self):
+        
+        return GameState(
+            player_AP=copy.deepcopy(self.player_AP),
+            player_NAP=copy.deepcopy(self.player_NAP),
+            stack=copy.deepcopy(self.stack)
+        )
+        
+        
+    def legal_actions(self):
+        actions = []
+        player_ns = self.player_NS
+        player_s = self.player_S
+        phase = self.phase
+        player_ap = self.player_AP
+        player_nap = self.player_NAP
+
+        
+        
+        if phase == "main phase 1" or phase == "main phase 2":
+            
+            if player_s == player_ap and not self.stack:
+                # tap land actions
+                tap_land_legal_actions(player_s, actions)
+
+                # play land actions
+                play_land_legal_actions(player_s, actions)
+                
+                # play creature actions
+                play_creature_legal_actions(player_s, actions)
+                
+                # play instant actions
+                play_instant_legal_actions(player_s, player_ns, actions)
+                
+            else:
+                # tap land actions
+                tap_land_legal_actions(player_s, actions)
+                # play instant actions
+                play_instant_legal_actions(player_s, player_ns, actions)
+                
+            
+        elif phase == "declare attack phase":
+            
+            if player_s == player_ap:
+                # tap land actions
+                tap_land_legal_actions(player_s, actions)
+                
+                # play instant actions
+                play_instant_legal_actions(player_s, player_ns, actions)
+                
+                # declare attack actions
+                attack_legal_actions(player_ap, actions)
+                
+            elif player_s == player_nap:
+                # tap land actions
+                tap_land_legal_actions(player_s, actions)
+                # play instant actions
+                play_instant_legal_actions(player_s, player_ns, actions)
+        
+        elif phase == "declare block phase":
+            
+            if player_s == player_ap:
+                # tap land actions
+                tap_land_legal_actions(player_s, actions)
+                
+                # play instant actions
+                play_instant_legal_actions(player_s, player_ns, actions)
+                
+            elif player_s == player_nap:
+                # tap land actions
+                tap_land_legal_actions(player_s, actions)
+                
+                # play instant actions
+                play_instant_legal_actions(player_s, player_ns, actions)
+                
+                # declare block acions
+                block_legal_actions(player_ap, player_nap, actions)
+            
+            
+        elif phase == "resolve battle phase":
+            # tap land actions
+            tap_land_legal_actions(player_s, actions)
+            
+            # play instant actions
+            play_instant_legal_actions(player_s, player_ns, actions)
+            
+        elif phase == "just attacks":
+            
+            # declare attack actions
+            # Only the AP can declare attakcs
+            attack_legal_actions(player_ap, actions)
+        
+        # Once attacks are declared, players have a chance to cast instants same with after block   
+        elif phase == "after attack":
+            # tap land actions
+            tap_land_legal_actions(player_s, actions)
+            
+            # play instant actions
+            play_instant_legal_actions(player_s, player_ns, actions)
+            
+        elif phase == "just blocks":
+            
+            if player_s == player_nap:
+                # declare block acions
+                block_legal_actions(player_ap, player_nap, actions)
+            
+        elif phase == "after block":
+            # tap land actions
+            tap_land_legal_actions(player_s, actions)
+            
+            # play instant actions
+            play_instant_legal_actions(player_s, player_ns, actions)
+            
+            
+            
+        if not actions:
+            actions = [False]
+            
+
+        return actions
+    
+    def execute_action(self,action):
     #print("Main Action")
     
-    add_to_stack(GameState)
-    
-    # Execute stack if both players passed and there is anything to execute    
-    if GameState.stack and GameState.player_AP.passed and GameState.player_NAP.passed:
-        #print("Execute stack if both players passed")
+        if self.player_AP.life <= 0:
+            self.winner = self.player_NAP.life
+            
+        elif self.player_NAP.life <= 0:
+            self.winner = self.player_AP.life
+            
+        else:
+            
+            choose_action(action,self)
+            
+            # Execute stack if both players passed and there is anything to execute    
+            if self.stack and self.player_AP.passed and self.player_NAP.passed:
+                #print("Execute stack if both players passed")
+                execute_stack(self)
+                
+            # Change phase if no stack and both players pass        
+            elif not self.stack and self.player_AP.passed and self.player_NAP.passed:
+                #print("Change Phase if both players passes and no actions")
+                
+                if self.phase == "resolve battle phase":
+                    resolve_combat(self)
+                
+                change_phase(self)
+            
+            # Keep prio on attacker or blocker during the just attacks/blocks phase 
+            elif self.reset_prio == True:
+                #print("prio is reset")
 
-        execute_stack(GameState)
-        
-        
-    
-    # Change phase if no stack and both players pass        
-    elif not GameState.stack and GameState.player_AP.passed and GameState.player_NAP.passed:
-        #print("Change Phase if both players passes and no actions")
-        
-        if GameState.phase == "resolve battle phase":
-            resolve_combat(GameState)
-        
-        change_phase(GameState)
-    
-    # Keep prio on attacker or blocker during the just attacks/blocks phase 
-    elif GameState.reset_prio == True:
-        #print("gamestate prio is reset")
+                self.player_S = self.player_AP
+                self.player_NS = self.player_NAP
+                self.reset_prio = False
+                self.player_AP.passed = False
+                self.player_NAP.passed = False
+            
+            # Switch between player adding to the stack
+            else:
 
-        GameState.player_S = GameState.player_AP
-        GameState.player_NS = GameState.player_NAP
-        GameState.reset_prio = False
-        GameState.player_AP.passed = False
-        GameState.player_NAP.passed = False
-    
-    # Switch between player adding to the stack
-    else:
+                #print("Prio is switched")
+            
+                self.player_S_copy = self.player_NS
+                self.player_NS_copy = self.player_S
 
-        #print("Prio is switched")
-    
-        GameState.player_S_copy = GameState.player_NS
-        GameState.player_NS_copy = GameState.player_S
-
-        GameState.player_S = GameState.player_S_copy
-        GameState.player_NS = GameState.player_NS_copy
-
-
+                self.player_S = self.player_S_copy
+                self.player_NS = self.player_NS_copy
     
     
 

@@ -17,16 +17,7 @@ class Player:
         self.played_land = False
         self.passed = False
         
-class GameState:
-    def __init__(self, player_AP: Player, player_NAP: Player, 
-                 stack: list):
-        self.player_AP = player_AP
-        self.player_NAP = player_NAP
-        self.player_S = player_AP
-        self.player_NS = player_NAP
-        self.stack = stack
-        self.phase = "first phase"
-        self.reset_prio = False  
+
         
         
 class CreatureCard(Card):
