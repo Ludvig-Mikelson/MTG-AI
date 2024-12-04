@@ -43,6 +43,15 @@ class MCTSNode:
                 + c_param * (math.sqrt(math.log(self.visit_count) / item[1].visit_count))
             ),
         )[1]
+        
+    def get_child_node_for_action(self, action):
+        """
+        Retrieve the child node corresponding to a specific action.
+        """
+        action_key = (
+            tuple(sorted(action.items())) if isinstance(action, dict) else action
+        )
+        return self.children.get(action_key, None)
 
 def mcts_search(root, simulations=100, ai_player=None):
     """
@@ -132,15 +141,74 @@ def simulate_rollout(state, ai_player, max_depth=100):
     return reward
 
 
-# Specify AI player
-ai_player = player1  # AI is controlling player1
-
-# Initialize MCTS root node
+ai_player = player1  
 root = MCTSNode(state)
 
-# Perform MCTS search
-try:
-    best_action = mcts_search(root, simulations=100, ai_player=ai_player)
-    print(f"Best action determined by MCTS: {best_action}")
-except Exception as e:
-    print(f"Error during MCTS: {e}")
+#try:
+#    best_action = mcts_search(root, simulations=100, ai_player=ai_player)
+#    print(f"Best action determined by MCTS: {best_action}")
+#except Exception as e:
+#    print(f"Error during MCTS: {e}")
+    
+    
+def play_game_with_mcts(ai_player, max_simulations=100):
+    """
+    Main game loop to play a game using Monte Carlo Tree Search for the AI player.
+    
+    :param ai_player: The player object representing the AI.
+    :param max_simulations: Number of MCTS simulations for each decision.
+    """
+    # Initialize the game state
+    game_state = en.GameState(player_AP=player1, player_NAP=player2, stack=[])
+    root = MCTSNode(game_state, ai_player)
+
+    while not game_state.is_terminal():
+        # Display the current phase and state
+        print(f"\nCurrent Phase: {game_state.phase}")
+        print(f"Alice Life: {game_state.player_AP.life}, Bob Life: {game_state.player_NAP.life}")
+
+        # Determine the current player and their legal actions
+        current_player = game_state.player_AP if game_state.player_AP == game_state.player_S else game_state.player_NAP
+        print(f"Current Player: {'AI' if current_player == ai_player else 'Opponent'}")
+        legal_actions = game_state.legal_actions()
+
+        if not legal_actions or legal_actions == [False]:
+            print("No valid actions. Passing priority.")
+            game_state.execute_action(False)
+            continue
+
+        # AI's Turn
+        if current_player == ai_player:
+            print("AI is thinking...")
+            try:
+                best_action = mcts_search(root, max_simulations, ai_player)
+                print(f"AI chooses action: {best_action}")
+                game_state.execute_action(best_action)
+            except Exception as e:
+                print(f"Error during AI decision-making: {e}")
+                game_state.execute_action(False)  # Fallback to passing priority
+        else:
+            # Opponent's Turn: For simplicity, pass (replace with specific logic if needed)
+            print("Opponent is thinking...")
+            opponent_action = random.choice(legal_actions)  # Simplified to first legal action
+            print(f"Opponent chooses action: {opponent_action}")
+            game_state.execute_action(opponent_action)
+
+        # Determine if the game has ended
+        if game_state.is_terminal():
+            break
+
+        # Move to the next state in the tree
+        root = root.get_child_node_for_action(game_state) or MCTSNode(game_state, ai_player)
+
+    # Determine and display the winner
+    game_state.determine_winner()
+    print("\nGame Over!")
+    if game_state.winner == ai_player:
+        print("AI wins!")
+    elif game_state.winner is None:
+        print("It's a draw!")
+    else:
+        print("Opponent wins!")
+
+play_game_with_mcts(player2)
