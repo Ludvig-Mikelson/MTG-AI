@@ -21,17 +21,20 @@ class DmgToAny:
     def __init__(self, damage = 0):
         self.damage = damage
         
-    def apply(self, card, target, damage = 0):
+    def apply(self, card, target):
+        print("BADABAAMFMAMFAMFAMFMAMF HEHEHEEHHEHEHEHEHEHHHEH HHIHIHIHIHI")
+        print(card)
+        print(target)
         if isinstance(target,cs.Player):
-            if self.damage > 0:         # The case when damage can be defined at start
-                damage = self.damage
-            target.life -= damage
-            print(f"{card.name} does {damage} damage to {target.name}")
+            
+            target.life -= self.damage
+            print(f"{card.name} does {self.damage} damage to {target.name}")
             print(f"{target.name} has {target.life} life left")
-        elif isinstance(card, cs.CreatureCard):
-            target.toughness -= damage
-            print(f"{card.name} does {damage} damage to {target.name}")
+        elif isinstance(target, cs.CreatureCard):
+            target.toughness -= self.damage
+            print(f"{card.name} does {self.damage} damage to {target.name}")
         else:
+            ""
             print(f"{target.name} is not a valid target")
 
 # Mēģināju pēc analoģijas interes pēc pievienot power/toughness mainītāju, kas strādā gan ar +, gan -. 
@@ -42,7 +45,7 @@ class ApplyBuffs:
         self.toughness_change = toughness_change
     
     def apply(self, card, target):
-        if isinstance(card, cs.CreatureCard):
+        if isinstance(target, cs.CreatureCard):
             if self.power_change != 0:
                 target.power += self.power_change
                 print(f"{card.name} gives {self.power_change} power to {target.name}")
@@ -50,6 +53,7 @@ class ApplyBuffs:
                 target.toughness += self.toughness_change
                 print(f"{card.name} gives {self.toughness_change} toughness to {target.name}")
         else:
+            ""
             print(f"{target.name} is not a valid target")
 
 class Prowess:
