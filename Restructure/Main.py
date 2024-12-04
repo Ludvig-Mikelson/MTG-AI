@@ -1,11 +1,16 @@
 # tests
 import random
-import Encode
+import Classes as cs
+import Effects as ef
+import Card_Registry as cr
+import Engine as en
+
+# adjust legal action functions to include the actions themselves not string
 
 def play_creature_legal_actions(player_s, actions):
         # Add creature actions
     for creature in player_s.hand:
-        if isinstance(creature, CreatureCard) and creature.mana_cost <= player_s.mana_pool:
+        if isinstance(creature, cs.CreatureCard) and creature.mana_cost <= player_s.mana_pool:
             actions.append({
                 "type": "creature",
                 "id": creature.id,
@@ -19,7 +24,7 @@ def play_creature_legal_actions(player_s, actions):
 def play_instant_legal_actions(player_s, actions):
         # Add instant actions
     for instant in player_s.hand:
-        if isinstance(instant, InstantCard) and instant.mana_cost <= player_s.mana_pool:
+        if isinstance(instant, cs.InstantCard) and instant.mana_cost <= player_s.mana_pool:
             actions.append({
                 "type": "instant",
                 "id": instant.id,
@@ -32,7 +37,7 @@ def play_instant_legal_actions(player_s, actions):
 def play_land_legal_actions(player_s, actions):
     
     for land in player_s.hand:
-        if isinstance(land, LandCard) and player_s.played_land == False:
+        if isinstance(land, cs.LandCard) and player_s.played_land == False:
             actions.append({
                 "type": "land",
                 "id": land.id,
@@ -128,7 +133,7 @@ def legal_actions(GameState, instant_to_target=None):
         # play instant actions
         play_instant_legal_actions(player_s, actions)
         
-    elif phase == "declare_attack_phase":
+    elif phase == "declare attack phase":
         # tap land actions
         tap_land_legal_actions(player_s, actions)
         
@@ -138,7 +143,7 @@ def legal_actions(GameState, instant_to_target=None):
         # declare attack actions
         attack_legal_actions(player_ap, actions)
     
-    elif phase == "declare_block_phase":
+    elif phase == "declare block phase":
         # tap land actions
         tap_land_legal_actions(player_s, actions)
         
@@ -161,24 +166,22 @@ def legal_actions(GameState, instant_to_target=None):
             
             
             
-        # For cards that require choice, create a half action append it to half action list and make so that legal action function
-        # locks all actions that are not half action if there is anything inside the half action set.      
-        
-
-
-# Choose action, opponent has abillity to choose an action, you have an opportunity to choose an action, loop like that untill both
-# players choose to not make an action in a row. then resolve the actions in the order they were made. 
-
-def choose_action(actions):
-    if actions:
+def choose_action(actions, GameState):
+    if actions and random.choice([1,2]) == 1:
         action = random.choice(actions)
         
         if action.type == "Instant":
             if action.target == None:
                 action = legal_actions(GameState, instant_to_target=action)
+                
+        GameState.player_S.passed = False
+        GameState.stack.append(action)
         
-    GameState.stack.append(action)
-
+    else:
+        GameState.player_S.passed = True
+        
+ 
+    
 def execute_stack(GameState):
     stack = GameState.stack.reverse()
     
@@ -188,6 +191,29 @@ def execute_stack(GameState):
         else:
             action["action"](action["target"])
         
+
+def change_phase(GameState):
+
+    current_phase = GameState.phase
+    en.phase_action[current_phase](GameState)
+
+def add_to_stack(GameState):
+    
+    actions = legal_actions(GameState)
+    action = choose_action(actions, GameState)
+    GameState.stack.append(action) 
+    
+def main_action(GameState):
+    
+    add_to_stack(GameState)
+    
+    if GameState.stack and GameState.player_AP.passed and GameState.player_NAP.passed:
+        execute_stack(GameState)
+        
+    elif not GameState.stack and GameState.player_AP.passed and GameState.player_NAP.passed:
+        change_phase(GameState)
+    
+    
     
     
 

@@ -42,6 +42,7 @@ class CreatureCard(Card):
         self.auras = auras
         self.tapped = tapped
         self.spell_targeted = False
+        self.blockers = []
         self.flying = flying
         self.is_mouse = is_mouse
         self.trample = trample
