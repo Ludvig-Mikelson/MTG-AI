@@ -51,7 +51,8 @@ Creature_Card_Registry = {
         "og_power": 1,
         "og_toughness": 1,
         "effects": ["ef.Valiant_Heartfire()"],
-        "deathrattle": ["ef.DmgToAny(0)"],  # Damage is defined later
+        "valiant": ["ef.Valiant_Heartfire()"],
+        "deathrattle_dmg": ["ef.DmgToAny(0)"],  # Damage is defined later
         "is_mouse": True
     },
     "Monastery Swiftspear": {
@@ -60,6 +61,7 @@ Creature_Card_Registry = {
         "og_power": 1,
         "og_toughness": 2,
         "effects": ["ef.Prowess()"],
+        "prowess": ["ef.Prowess()"],
         "tapped": False         # This is HASTE! Because that's for starting value
     },
     "Emberheart Challenger": {
@@ -68,6 +70,8 @@ Creature_Card_Registry = {
         "og_power": 2,
         "og_toughness": 2,
         "effects": ["ef.Prowess()", "ef.Valiant_Emberheart()"],
+        "valiant": ["ef.Valiant_Emberheart()"],
+        "prowess": ["ef.Prowess()"],
         "tapped": False,
         "is_mouse": True
     },
@@ -95,6 +99,7 @@ Creature_Card_Registry = {
         "og_power": 1,
         "og_toughness": 2,
         "effects": ["ef.Prowess_Slickshot()"],
+        "valiant": ["ef.Prowess_Slickshot()"],
         "tapped": False,
         "flying": True
     }    
@@ -165,9 +170,6 @@ def card_factory(card_name,card_type):
             mana_cost=template["mana_cost"],
             og_power=template["og_power"],
             og_toughness=template["og_toughness"],
-            cast_effects=[eval(effect) for effect in template.get("cast_effects", [])],
-            later_effects=[eval(effect) for effect in template.get("later_effects", [])],
-            deathrattle=[eval(deathrattle) for deathrattle in template.get("deathrattle", [])],
             is_token=template.get("is_token", False),
             auras=template.get("auras", []),
             tapped=template.get("tapped", True),
@@ -175,7 +177,12 @@ def card_factory(card_name,card_type):
             is_mouse=template.get("is_mouse", False),
             trample=template.get("trample", False),
             trample_eot=template.get("trample_eot", False),
-            menace=template.get("menace", False)
+            menace=template.get("menace", False),
+
+            cast_effects=[eval(effect) for effect in template.get("cast_effects", [])],
+            prowess=[eval(prowess) for prowess in template.get("prowess", [])],
+            valiant=[eval(valiant) for valiant in template.get("valiant", [])],
+            deathrattle_dmg=[eval(deathrattle_dmg) for deathrattle_dmg in template.get("deathrattle_dmg", [])]
         )
     elif card_type == "Land":
         template = Land_Card_Registry.get(card_name)

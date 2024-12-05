@@ -24,7 +24,7 @@ class DmgToAny:
     def __init__(self, damage = 0):
         self.damage = damage
         
-    def apply(self, card, target, damage = 0):          # self nāk no DmgToAny inita, card ir selfs? ko padod instantā izsaukšana.
+    def apply(self, card, target, player, damage = 0):          # self nāk no DmgToAny inita, card ir selfs? ko padod instantā izsaukšana.
         print("BADABAAMFMAMFAMFAMFMAMF HEHEHEEHHEHEHEHEHEHHHEH HHIHIHIHIHI")
         print(card)
         print(target)
@@ -48,7 +48,7 @@ class ApplyBuffs:
         self.power_change = power_change
         self.toughness_change = toughness_change
     
-    def apply(self, card, target):
+    def apply(self, card, target, player):
         if isinstance(target, cs.CreatureCard):
             target.power += self.power_change
             target.toughness += self.toughness_change

@@ -190,11 +190,11 @@ def resolve_combat(GameState):
                 
     for creature in GameState.player_AP.board:
         if creature.toughness <= 0:
-            creature.leaves_battlefield(GameState.player_AP)
+            creature.leaves_battlefield(GameState.player_AP, GameState.player_NAP)
             
     for creature in GameState.player_NAP.board:
         if creature.toughness <= 0:
-            creature.leaves_battlefield(GameState.player_NAP)
+            creature.leaves_battlefield(GameState.player_NAP, GameState.player_AP)
                 
     
     
