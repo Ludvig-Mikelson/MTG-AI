@@ -33,10 +33,10 @@ class Node:
         untried_actions = [
             action for action in all_actions if action not in tried_actions
         ]
-        print(f"{untried_actions}")
+        print(f" AHAHHA {untried_actions} HAHAHAHA")
         return len(untried_actions) == 0
 
-    def best_child(self, exploration_weight=0.4):
+    def best_child(self, exploration_weight=0.5):
         """Choose the best child node based on UCB."""
         best_score = -float('inf')
         best_child = None
@@ -86,7 +86,7 @@ def simulate(state, ai):
         
     return stato.get_result(ai)
 
-def mcts(root,ai, iterations=1):
+def mcts(root,ai, iterations=10):
     """Perform MCTS to find the best action."""
     for _ in range(iterations):
         node = root
@@ -113,26 +113,31 @@ def mcts(root,ai, iterations=1):
 
 
 if __name__ == "__main__":
-    ai = player1
+    ai = player2
     wins = 0
     acts = []
     for _ in range(0,1,1):
         initial_state = state
         root = Node(initial_state)
-        i = 0
-        while i < 50:
+        
+        while not root.state.is_terminal():
             if root.state.player_S.name == ai.name:
                 
                 
-                root = mcts(root,ai, iterations=1)
-                acts.append(f"Best action: {root.state.action_taken}")
-                print(root.value)
+                root = mcts(root,ai, iterations=10)
+                if root:
+                    if root.state.action_taken:
+                        acts.append(f"Best action: {root.state.action_taken["type"]} value {root.value}")
+                    else:
+                        acts.append(f"Best action: {root.state.action_taken}")
+                        
+                    print(root.value)
                 
             else:
                 actions = root.state.legal_actions()
                 action = random.choice(actions)
                 root.state.execute_action(action)
-            i+=1
+            
 
         print(f"{root.state.player_AP.name}  {root.state.player_AP.life}")
         print(f"{root.state.player_NAP.name}  {root.state.player_NAP.life}")
@@ -143,6 +148,7 @@ if __name__ == "__main__":
             
     #print(wins)
     print(acts)
+
 
 """
 bob = 0

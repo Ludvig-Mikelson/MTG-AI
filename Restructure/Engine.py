@@ -271,9 +271,6 @@ def play_instant_legal_actions(player_s, player_ns, actions):
 
     targets = player_ns.board + player_s.board + [player_s, player_ns]
     
-            
-        
-        
         
         # Add instant actions
     for instant in player_s.hand:
@@ -324,30 +321,7 @@ def tap_land_legal_actions(player_s, actions):
                 "action": land.tap,
                 "cost": 0
             })
-            
-def target_instant_legal_actions(player_s, player_ns, instant_to_target, actions):
-    
-    # again bad fix for monstrous rage
-    if instant_to_target["name"] == "Monstrous Rage":
-        players = []
-    else:
-        players = [player_ns, player_s]
-    
-    
-    if instant_to_target:
-        for target in players + player_ns.board + player_s.board:
-            
-            
-            actions.append({
-                "type": "instant",
-                "id": instant_to_target["id"],  
-                "name": instant_to_target["name"],
-                "player": instant_to_target["player"],
-                "target": target,
-                "action": instant_to_target["action"],
-                "cost": instant_to_target["cost"] 
-                })
-    return actions
+
 
 def attack_legal_actions(player_AP,actions):
     
@@ -519,20 +493,20 @@ class GameState:
             if self.player_NS.life <= 0:
                 print(f"AI {self.player_S.name} wins: Opponent life={self.player_NS.life}")
                 self.winner = self.player_S
-                return -1  # AI wins
+                return +1  # AI wins
             elif self.player_S.life <= 0:
                 print(f"AI {self.player_S.name} loses: AI life={self.player_S.life}")
                 self.winner = self.player_NS
-                return +1  # AI loses
+                return -1  # AI loses
         else:
             if self.player_S.life <= 0:
                 print(f"AI {self.player_NS.name} wins: Opponent life={self.player_S.life}")
                 self.winner = self.player_NS
-                return -1  # AI wins
+                return +1  # AI wins
             elif self.player_NS.life <= 0:
                 print(f"AI {self.player_NS.name} loses: AI life={self.player_S.life}")
                 self.winner = self.player_S
-                return +1  # AI loses
+                return -1  # AI loses
         print("Game continues.")
         return +0  # Game is not over
     
