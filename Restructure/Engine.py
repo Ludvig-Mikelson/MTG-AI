@@ -5,6 +5,27 @@ import Card_Registry as cr
 import random
 import copy
 
+def build_deck(creatures,instants):
+    land_card_names = list(cr.Land_Card_Registry.keys())
+    deck = []
+    
+    for card_name in creatures:
+        card = cr.card_factory(card_name,"Creature")  # Create a unique instance of the card
+        deck.append(card)  # Add the card to the deck
+       
+    for _ in range(20):
+        land_card_name = random.choice(land_card_names)  
+        card = cr.card_factory(land_card_name,"Land")  
+        deck.append(card) 
+        
+    for instant_card_name in instants:
+        card = cr.card_factory(instant_card_name,"Instant")  
+        deck.append(card)         
+    
+    random.shuffle(deck)
+
+    return deck
+
 
 
   
@@ -296,9 +317,6 @@ def play_instant_legal_actions(player_s, player_ns, actions):
 
     targets = player_ns.board + player_s.board + [player_s, player_ns]
     
-            
-        
-        
         
         # Add instant actions
     for instant in player_s.hand:
@@ -349,30 +367,7 @@ def tap_land_legal_actions(player_s, actions):
                 "action": land.tap,
                 "cost": 0
             })
-            
-def target_instant_legal_actions(player_s, player_ns, instant_to_target, actions):      # Šis nekur netiek izsaukts ??
-    
-    # again bad fix for monstrous rage
-    if instant_to_target["name"] == "Monstrous Rage":
-        players = []
-    else:
-        players = [player_ns, player_s]
-    
-    
-    if instant_to_target:
-        for target in players + player_ns.board + player_s.board:
-            
-            
-            actions.append({
-                "type": "instant",
-                "id": instant_to_target["id"],  
-                "name": instant_to_target["name"],
-                "player": instant_to_target["player"],
-                "target": target,
-                "action": instant_to_target["action"],
-                "cost": instant_to_target["cost"] 
-                })
-    return actions
+
 
 def attack_legal_actions(player_AP,actions):
     
@@ -527,7 +522,7 @@ def change_phase(GameState):
 
 class GameState:
     def __init__(self, player_AP: cs.Player, player_NAP: cs.Player, 
-                 stack: list):
+                 stack: list, action_taken = None):
         self.player_AP = player_AP
         self.player_NAP = player_NAP
         self.player_S = player_AP
@@ -536,24 +531,30 @@ class GameState:
         self.phase = "main phase 1"
         self.reset_prio = False
         self.winner = None
+        self.action_taken = action_taken
         
     def get_result(self, ai_player):
-        if self.player_AP == ai_player:
-            if self.player_NAP.life <= 0:
-                print(f"AI wins: Opponent life={self.player_NAP.life}")
+        
+        if self.player_S == ai_player:
+            if self.player_NS.life <= 0:
+                print(f"AI {self.player_S.name} wins: Opponent life={self.player_NS.life}")
+                self.winner = self.player_S
                 return +1  # AI wins
-            elif self.player_AP.life <= 0:
-                print(f"AI loses: AI life={self.player_AP.life}")
+            elif self.player_S.life <= 0:
+                print(f"AI {self.player_S.name} loses: AI life={self.player_S.life}")
+                self.winner = self.player_NS
                 return -1  # AI loses
         else:
-            if self.player_AP.life <= 0:
-                print(f"AI wins: Opponent life={self.player_AP.life}")
+            if self.player_S.life <= 0:
+                print(f"AI {self.player_NS.name} wins: Opponent life={self.player_S.life}")
+                self.winner = self.player_NS
                 return +1  # AI wins
-            elif self.player_NAP.life <= 0:
-                print(f"AI loses: AI life={self.player_NAP.life}")
+            elif self.player_NS.life <= 0:
+                print(f"AI {self.player_NS.name} loses: AI life={self.player_S.life}")
+                self.winner = self.player_S
                 return -1  # AI loses
         print("Game continues.")
-        return 0  # Game is not over
+        return +0  # Game is not over
     
     def is_terminal(self):
         if self.player_AP.life <= 0 or self.player_NAP.life <= 0:
@@ -562,15 +563,15 @@ class GameState:
         return False
         
     def determine_winner(self):
-        print(self.player_AP.life)
-        print(self.player_NAP.life)
+        print(f"{self.player_AP.name} {self.player_AP.life}")
+        print(f"{self.player_NAP.name} {self.player_NAP.life}")
         
-        if self.player_AP.life <= 0:
+        if self.player_S.life <= 0:
             print("did it go here")
-            self.winner = self.player_NAP
-        elif self.player_NAP.life <= 0:
+            self.winner = self.player_NS
+        elif self.player_NS.life <= 0:
             print("did it go down here")
-            self.winner = self.player_AP
+            self.winner = self.player_S
         else:
             self.winner = None 
             
@@ -701,8 +702,7 @@ class GameState:
         
         
 
-            if self.phase in ["begin phase", "end phase", "first phase"]:
-                change_phase(self)
+            
             
             print(f"Executing action: {action}")
             choose_action(action,self)

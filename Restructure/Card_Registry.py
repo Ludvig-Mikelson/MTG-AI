@@ -153,8 +153,19 @@ Enchantment_Card_Registry = {
 }
     
 
+HH = ["Heartfire Hero","Heartfire Hero","Heartfire Hero","Heartfire Hero"]
+MS = ["Monastery Swiftspear","Monastery Swiftspear","Monastery Swiftspear","Monastery Swiftspear"]
+EC = ["Emberheart Challenger","Emberheart Challenger","Emberheart Challenger","Emberheart Challenger"]
+MM = ["Manifold Mouse","Manifold Mouse","Manifold Mouse","Manifold Mouse"]
+SS = ["Slickshot Show-Off","Slickshot Show-Off","Slickshot Show-Off","Slickshot Show-Off"]
 
+creature_list = HH + MS + EC + MM + SS
 
+LS = ["Lightning strike","Lightning strike","Lightning strike","Lightning strike"]
+SH = ["Shock","Shock","Shock","Shock"]
+MR = ["Monstrous Rage","Monstrous Rage","Monstrous Rage","Monstrous Rage"]
+
+instant_list = LS + SH + MR
 # Card factory function to create unique card instances
 def card_factory(card_name,card_type):
     if card_type == "Creature":
