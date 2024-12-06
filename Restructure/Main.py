@@ -1,3 +1,4 @@
+#%%
 import Engine as en
 import Classes as cs
 import random
@@ -212,3 +213,4 @@ def play_game_with_mcts(ai_player, max_simulations=100):
         print("Opponent wins!")
 
 play_game_with_mcts(player2)
+# %%

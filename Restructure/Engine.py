@@ -11,7 +11,9 @@ import copy
 def build_random_deck(deck_size=60):
     card_names = list(cr.Creature_Card_Registry.keys())  
     land_card_names = list(cr.Land_Card_Registry.keys())
-    sorcery_card_names = list(cr.Instant_Card_Registry.keys())
+    instant_card_names = list(cr.Instant_Card_Registry.keys())
+    enchantment_card_names = list(cr.Enchantment_Card_Registry.keys())
+
     deck = []
     
     for _ in range((deck_size-30)):
@@ -24,10 +26,16 @@ def build_random_deck(deck_size=60):
         card = cr.card_factory(land_card_name,"Land")  
         deck.append(card) 
         
+    for _ in range(20):
+        instant_card_name = random.choice(instant_card_names)  
+        card = cr.card_factory(instant_card_name,"Instant")  
+        deck.append(card)    
+
     for _ in range(10):
-        sorcery_card_name = random.choice(sorcery_card_names)  
-        card = cr.card_factory(sorcery_card_name,"Instant")  
-        deck.append(card)         
+        enchantment_card_name = random.choice(enchantment_card_names)
+        card = cr.card_factory(enchantment_card_name,"Enchantment")  
+        deck.append(card)
+
     
     random.shuffle(deck)
 
@@ -60,6 +68,11 @@ def begin_phase(state):
         creature.tapped = False
     
     draw_card(state.player_AP)
+
+    board=[]
+    for card in state.player_AP.board:
+        board.append(card.name)
+    print(state.player_AP.name,"'s board: ", board)
     
     print("Begin Phase")
 
@@ -128,6 +141,7 @@ def reset_creatures(player: cs.Player):
             creature.blocking = False 
             creature.blocked_creature_id = None
             creature.spell_targeted = False
+            creature.trample_eot = False
 
     # Reset creatures in the player's graveyard
     for creature in player.graveyard:
@@ -155,36 +169,68 @@ def end_phase(state):
 def resolve_combat(GameState):
     
     creatures = GameState.player_AP.board
+
+    for creature in creatures:           # Manifold Mouse effect
+        if creature.name == "Manifold Mouse":   
+            controlled_mouses = [creat for creat in creatures if creature.is_mouse == True]
+            mouse = random.choice(controlled_mouses)                                        # ŠEIT IR JĀIZDARA IZVĒLE.
+            # Vajag aktivizēt vēl Valiant effect!
+            
+            buff = random.choice(["trample"])   # UN "double strike" vajag vēl!
+            if buff == "trample":
+                mouse.trample_eot == True
+            elif buff == "double_strike":
+                pass                            # for now
+            print(f"Manifold mouse effect gave {buff} to {mouse.name} until EOT.")
+
+######
+# Šādi strādā Flying, nezinu kur tas jāimplementē šobrīd īsti, atstāšu šeit:
+######
+
+# if not (to_block.flying==True and blocker.flying==False):   # only 1 out of 4 cases when cannot block
+#     blocker.blocked_creature_id = to_block.id
+# else:
+#     print(f"Couldn't block, attacker {to_block.name} flying: {to_block.flying}, blocker {blocker.name} flying: {blocker.flying}")
+
     
     for attacker in creatures:
         if attacker.attacking:
             if attacker.blockers:
-                for blocker in attacker.blockers:
-                    
-                    
-                    if attacker.power <= 0:
-                        attacker.power = 0
-                    if attacker.toughness <= 0:
-                        attacker.toughness = 0
-                    if blocker.toughness <= 0:
-                        blocker.toughness = 0    
+                if (attacker.menace == True and len(attacker.blockers) >= 2) or attacker.menace == False:    # checks menace condition
+                    for blocker in attacker.blockers:
+
+                        if attacker.power <= 0:
+                            attacker.power = 0
+                        if blocker.power <= 0:      # pievienoju šo, agrāk bija
+                            blocker.power = 0
+                        if attacker.toughness <= 0:
+                            attacker.toughness = 0
+                        if blocker.toughness <= 0:
+                            blocker.toughness = 0    
+                            
+                        print(f"{blocker.power}/{blocker.toughness} {blocker.name} is blocking {attacker.power}/{attacker.toughness} {attacker.name}")
                         
-                    print(f"{blocker.power}/{blocker.toughness} {blocker.name} is blocking {attacker.power}/{attacker.toughness} {attacker.name}")
+                        bt = blocker.toughness
+                        ap = attacker.power
+                        bp = blocker.power
+                            
+                        blocker.toughness -= ap
+                        attacker.toughness -= bp
+                        attacker.power -= bt
                     
-                    bt = blocker.toughness
-                    ap = attacker.power
-                    bp = blocker.power
-                        
-                    blocker.toughness -= ap
-                    attacker.toughness -= bp
-                    attacker.power -= bt
-                
-                # When Trample is ready this can be uncommented
-                #if attacker.trample:
-                    #GameState.player_NAP.life -= attacker.power
+                    # When Trample is ready this can be uncommented
+                    #if attacker.trample:
+                        #GameState.player_NAP.life -= attacker.power
+                    if (attacker.trample==True or attacker.trample_eot==True) and attacker.power>0:    # for remaining power, and doesn't need toughness check?
+                        print(f"{attacker.power}/{attacker.toughness} {attacker.name} deals Trample damage to Player {GameState.player_NAP.name}.")
+                        GameState.player_NAP.life -= attacker.power
+                        print(f"{GameState.player_NAP.name} has {GameState.player_NAP.life} life left")
+                elif attacker.menace == True and len(attacker.blockers) == 1:
+                    print(f"One blocker {attacker.blockers[0].name} cannot block {attacker.name} with Menace")
+
             else:
                 
-                print(f"{attacker.power}/{attacker.toughness} {attacker.name} deals damage to the {GameState.player_NAP.name}.")
+                print(f"{attacker.power}/{attacker.toughness} {attacker.name} deals damage to Player {GameState.player_NAP.name}.")
                 GameState.player_NAP.life -= attacker.power
                 print(f"{GameState.player_NAP.name} has {GameState.player_NAP.life} life left")
                 
@@ -304,7 +350,7 @@ def tap_land_legal_actions(player_s, actions):
                 "cost": 0
             })
             
-def target_instant_legal_actions(player_s, player_ns, instant_to_target, actions):
+def target_instant_legal_actions(player_s, player_ns, instant_to_target, actions):      # Šis nekur netiek izsaukts ??
     
     # again bad fix for monstrous rage
     if instant_to_target["name"] == "Monstrous Rage":

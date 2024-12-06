@@ -80,7 +80,7 @@ class CreatureCard(Card):
         # for effect in self.cast_effects:
         #     effect.apply(self, player)        # So all creature effects have to take in creature and player, because both could be needed.
 
-        self.activate_cast_effects(self, player)
+        self.activate_cast_effects(player)      # izdzēsu self, cerams strādā.
 
             
     def attack(self,player):
@@ -161,59 +161,36 @@ class InstantCard(Card):
         for effect in self.effects:
             effect.apply(self,target)   
             
-    def play(self,player,target_choices):       #dod visas target iespējas, izvēlas šeit...?
-        if self.name == "Lightning strike":
-            target = random.choice(target_choices["all_enemies"])
-        elif self.name == "Shock":
-            target = random.choice(target_choices["all_enemies"])
+    def play(self,player, target):  
 
-        elif self.name == "Monstrous Rage":
-            targets = target_choices["controlled_creatures"]
-            if targets:
-                target = random.choice(targets)    # Technically can target anyone, but putting in only reasonable options.
-            else:
-                print("Cannot play this card, no targets.")
-                target = None
+        print(f"{player.name} plays {self.name}")
+        player.hand.remove(self)
+        player.mana_pool -= self.mana_cost
+        player.graveyard.append(self)
+            
+        self.activate_effects(target, player)
 
-        elif self.name == "Might of the Meek":
-            targets = target_choices["controlled_creatures"]
-            if targets:
-                target = random.choice(targets)
-            else:
-                print("Cannot play this card, no targets.")
-                target = None
-        else:
-            print("ERROR: name for Instant not in options")
+        # for effect in self.effects:             # Activating all the spell's effects right here
+        #     effect.apply(self, target, player)   
 
-        if target:
-            print(f"{player.name} plays {self.name}")
-            player.hand.remove(self)
-            player.mana_pool -= self.mana_cost
-            player.graveyard.append(self)
-                
-            self.activate_effects(target, player)
+        # Trigger them effects for all creatures with cast-spell effects:
+        for creature in player.board:
+            creature.activate_prowess(creature, player)
+            # for effect in creature.prowess:
+            #     if isinstance(effect, ef.Prowess):
+            #         effect.apply(creature, player)  
+            #     if isinstance(effect, ef.Prowess_Slickshot):
+            #         effect.apply(creature, player)
 
-            # for effect in self.effects:             # Activating all the spell's effects right here
-            #     effect.apply(self, target, player)   
-
-            # Trigger them effects for all creatures with cast-spell effects:
-            for creature in player.board:
-                creature.activate_prowess(creature, player)
-                # for effect in creature.prowess:
-                #     if isinstance(effect, ef.Prowess):
-                #         effect.apply(creature, player)  
-                #     if isinstance(effect, ef.Prowess_Slickshot):
-                #         effect.apply(creature, player)
-
-            # Trigger effects that activate on targeted:
-            if isinstance(target, CreatureCard):
-                if target in player.hand:       # This activates only if cast on controlled target
-                        target.activate_valiant(target, player)
-                    # for effect in target.later_effects:
-                    #     if isinstance(effect, ef.Valiant_Heartfire):       
-                    #         effect.apply(target, player)
-                    #     if isinstance(effect, ef.Valiant_Emberheart):
-                    #         effect.apply(target, player)
+        # Trigger effects that activate on targeted:
+        if isinstance(target, CreatureCard):
+            if target in player.hand:       # This activates only if cast on controlled target
+                    target.activate_valiant(target, player)
+                # for effect in target.later_effects:
+                #     if isinstance(effect, ef.Valiant_Heartfire):       
+                #         effect.apply(target, player)
+                #     if isinstance(effect, ef.Valiant_Emberheart):
+                #         effect.apply(target, player)
 
 
 
