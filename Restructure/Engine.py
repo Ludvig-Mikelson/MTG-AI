@@ -4,6 +4,7 @@ import Effects as ef
 import Card_Registry as cr
 import random
 import copy
+import uuid
 
 def build_deck(creatures,instants):
     land_card_names = list(cr.Land_Card_Registry.keys())
@@ -404,7 +405,17 @@ def block_legal_actions(player_AP, player_NAP, actions):
                         })
     
 
-
+def non_action(player_s):
+    
+  return  {
+    "type": "pass",
+    "id": str(uuid.uuid4()),  
+    "name": "Pass",
+    "player": player_s,
+    "target": None,
+    "action": "pass",
+    "cost": 0 
+            }
             
             
             
@@ -421,6 +432,13 @@ def choose_action(action, GameState):
         
                 # Remove from hand before playing so that it can't be played multiple times (bad solution)
                 action["player"].hand.remove(action["id"])
+                
+                
+        elif action["type"] == "pass":
+            GameState.player_S.passed = True
+            print(f"{GameState.player_S.name} passed")
+            
+            
                 
             
         # Once the first attack declaration is made, only attack declarations can be made    
@@ -447,30 +465,33 @@ def choose_action(action, GameState):
         #print(GameState.phase)
         # Adjust this when action can be skipped
         if action != None:
-            GameState.player_S.mana_pool -= action["cost"]
-            print(f"{action["player"].name}, {action["type"]}")
-            GameState.stack.append(action)
+            if action["type"] != "pass":
+                GameState.player_S.mana_pool -= action["cost"]
+                print(f"{action["player"].name}, {action["type"]}")
+                GameState.stack.append(action)
     
             
             
-    # If the player choosing to attack or block doesn't, move to after phase where no blcoks or attacks can be declared      
-    elif GameState.phase == "just attacks":
-        GameState.phase = "after attack"
-        GameState.player_AP.passed = False
-        GameState.player_NAP.passed = False
-        GameState.reset_prio = True
-        
-    elif GameState.phase == "just blocks":
-        GameState.phase = "after block"
-        GameState.player_AP.passed = False
-        GameState.player_NAP.passed = False
-        GameState.reset_prio = True
+    # If the player choosing to attack or block doesn't, move to after phase where no blcoks or attacks can be declared
+    print(f"This is an action {action}")
+    print(f"this is a phase {GameState.phase}")
+    if action:      
+        if GameState.phase == "just attacks" and action["type"] == "pass":
+            GameState.phase = "after attack"
+            GameState.player_AP.passed = False
+            GameState.player_NAP.passed = False
+            GameState.reset_prio = True
+            
+        elif GameState.phase == "just blocks" and action["type"] == "pass":
+            GameState.phase = "after block"
+            GameState.player_AP.passed = False
+            GameState.player_NAP.passed = False
+            GameState.reset_prio = True
 
     
-        
-    else:
-        GameState.player_S.passed = True
-        print(f"{GameState.player_S.name} passed")
+    #else:
+      #  GameState.player_S.passed = True
+        #print(f"{GameState.player_S.name} passed")
         
  
     
@@ -534,27 +555,29 @@ class GameState:
         self.action_taken = action_taken
         
     def get_result(self, ai_player):
-        
+        score = 0
+        score += len(ai_player.board) * 0.1
         if self.player_S.name == ai_player.name:
             if self.player_NS.life <= 0:
                 print(f"AI {self.player_S.name} wins: Opponent life={self.player_NS.life}")
                 self.winner = self.player_S
-                return +1  # AI wins
+                score +=1  # AI wins
             elif self.player_S.life <= 0:
                 print(f"AI {self.player_S.name} loses: AI life={self.player_S.life}")
                 self.winner = self.player_NS
-                return -1  # AI loses
+                score -=1  # AI loses
         else:
             if self.player_S.life <= 0:
                 print(f"AI {self.player_NS.name} wins: Opponent life={self.player_S.life}")
                 self.winner = self.player_NS
-                return +1  # AI wins
+                score +=1  # AI wins
             elif self.player_NS.life <= 0:
                 print(f"AI {self.player_NS.name} loses: AI life={self.player_NS.life}")
                 self.winner = self.player_S
-                return -1  # AI loses
+                score -=1  # AI loses
         print("Game continues.")
-        return +0  # Game is not over
+        
+        return score  # Game is not over
     
     def is_terminal(self):
         if self.player_AP.life <= 0 or self.player_NAP.life <= 0:
@@ -693,7 +716,7 @@ class GameState:
         print(f"Legal actions for {self.phase}: {actions}")  
             
         if not actions:
-            actions = [False]
+            actions = [non_action(player_s)]
             
 
         return actions
