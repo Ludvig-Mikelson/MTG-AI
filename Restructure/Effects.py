@@ -47,7 +47,7 @@ class ApplyBuffs:
         self.power_change = power_change
         self.toughness_change = toughness_change
     
-    def apply(self, card, target, player):
+    def apply(self, card, target):
         if isinstance(target, cs.CreatureCard):
             target.power += self.power_change
             target.toughness += self.toughness_change
@@ -63,14 +63,14 @@ class Prowess:
         print(f"{creature.name} got +1/+1 until end of turn from Prowess")
 
 class Prowess_Slickshot: 
-    def apply(creature: cs.CreatureCard, player):
+    def apply(creature: cs.CreatureCard):
         # Apply the +2/+0 effect to the creature
         creature.power += 2
         creature.toughness += 0
         print(f"{creature.name} got +2/+0 until end of turn from Prowess_Slickshot")
 
 class Valiant_Heartfire:        # Šim vajag aktivizēties arī no Manifold Mouse targeted efekta
-    def apply(creature: cs.CreatureCard, player):
+    def apply(creature: cs.CreatureCard):
         if creature.spell_targeted == False:
             creature.counter_power += 1
             creature.counter_toughness += 1
@@ -112,7 +112,7 @@ class Might_of_the_Meek:
             print(f"{target.name} is not a valid target")
 
 class Demonic_Aura:
-    def apply(self, card, creature: cs.CreatureCard, player):    # self?
+    def apply(self, card, creature: cs.CreatureCard):    # self?
         creature.counter_power += 1         # So it could be a perma buff
         creature.counter_toughness += 1
         creature.menace = True              # Both also permanent

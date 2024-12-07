@@ -164,11 +164,10 @@ class InstantCard(Card):
     def play(self,player, target):  
 
         print(f"{player.name} plays {self.name}")
-        player.hand.remove(self)
         player.mana_pool -= self.mana_cost
         player.graveyard.append(self)
             
-        self.activate_effects(target, player)
+        self.activate_effects(target)
 
         # for effect in self.effects:             # Activating all the spell's effects right here
         #     effect.apply(self, target, player)   

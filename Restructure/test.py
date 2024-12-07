@@ -128,7 +128,7 @@ def mcts(root,ai, iterations=10):
         result = simulate(node.state, ai)
         print(result)
         # Backpropagation
-        while node is not None:
+        while node.parent is not None:
             print(f"this {node.state.action_taken}")
             node.update(result)
             node = node.parent
