@@ -57,9 +57,10 @@ class CreatureCard(Card):
         for effect in self.cast_effects:
             effect.apply(self, player)        # So all creature effects have to take in creature and player.
                     
-    def activate_prowess(self, player):
+    def activate_prowess(self):
         for effect in self.prowess:
-            effect.apply(self, player)        # So all creature effects have to take in creature and player.
+            print(f"this is self {self}")
+            effect.apply(self)        # So all creature effects have to take in creature and player.
     
     def activate_valiant(self, player):
         for effect in self.valiant:
@@ -68,7 +69,8 @@ class CreatureCard(Card):
     def activate_deathrattle_dmg(self, player_op, player):
         print(f"!!!!!!!!!!!! Heartfire Hero power for deathrattle, is correct?: {self.og_power + self.counter_power}")
         for effect in self.deathrattle_dmg:
-            effect.apply(self, player_op, player, damage = self.og_power + self.counter_power)        # So all creature effects have to take in creature and player.
+            effect.damage = self.og_power + self.counter_power
+            effect.apply(self, player_op)        # So all creature effects have to take in creature and player.
 
     def play(self,player):
         
@@ -102,7 +104,7 @@ class CreatureCard(Card):
             print(f"{self.name} (token) is removed from the game")
         else:            
             # Heartfire Hero Deathrattle only inside:
-            self.activate_deathrattle_dmg(self, player_op, player, damage = self.og_power + self.counter_power)
+            self.activate_deathrattle_dmg(player_op, player)
 
             # for deathrattle in self.deathrattle:
             #     # deathrattle.apply(self, player)   # Doesn't work if the effects have different specifics
@@ -174,7 +176,7 @@ class InstantCard(Card):
 
         # Trigger them effects for all creatures with cast-spell effects:
         for creature in player.board:
-            creature.activate_prowess(creature, player)
+            creature.activate_prowess()
             # for effect in creature.prowess:
             #     if isinstance(effect, ef.Prowess):
             #         effect.apply(creature, player)  

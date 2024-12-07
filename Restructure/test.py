@@ -71,10 +71,12 @@ class Node:
 
     def expand(self):
         """Expand a node by creating a new child for an untried action."""
+        
         tried_actions = [child.state.action_taken for child in self.children]
+        tried_action_id = {action["id"] for action in tried_actions}
         untried_actions = [
-            action for action in self.state.legal_actions() if action not in tried_actions
-        ]
+                action for action in self.state.legal_actions() if action["id"] not in tried_action_id
+            ]
         
         print(f"Tried actions {tried_actions}")
         print(f"Untried actions {untried_actions}")

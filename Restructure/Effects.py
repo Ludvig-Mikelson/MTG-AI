@@ -56,14 +56,14 @@ class ApplyBuffs:
             print(f"{target.name} is not a valid target")
 
 class Prowess:
-    def apply(creature: cs.CreatureCard, player):       #Man meta erroru ka par maz parametru, ķipa vajadzēja lietot arī self
+    def apply(self,creature: cs.CreatureCard):       #Man meta erroru ka par maz parametru, ķipa vajadzēja lietot arī self
         # Apply the +1/+1 effect to the creature
         creature.power += 1
         creature.toughness += 1
         print(f"{creature.name} got +1/+1 until end of turn from Prowess")
 
 class Prowess_Slickshot: 
-    def apply(creature: cs.CreatureCard):
+    def apply(self,creature: cs.CreatureCard):
         # Apply the +2/+0 effect to the creature
         creature.power += 2
         creature.toughness += 0
