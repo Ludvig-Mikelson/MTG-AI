@@ -22,7 +22,6 @@ class DmgToAny:
         self.damage = damage
         
     def apply(self, card, target):
-        print("BADABAAMFMAMFAMFAMFMAMF HEHEHEEHHEHEHEHEHEHHHEH HHIHIHIHIHI")
         print(card)
         print(target)
         if isinstance(target,cs.Player):

@@ -300,7 +300,7 @@ def play_land_legal_actions(player_s, actions):
         if isinstance(land, cs.LandCard) and player_s.played_land == False:
             actions.append({
                 "type": "land",
-                "id": land,
+                "id": land.id,
                 "name": land.name,
                 "player": player_s,
                 "target": None,
@@ -489,7 +489,7 @@ class GameState:
         
     def get_result(self, ai_player):
         
-        if self.player_S == ai_player:
+        if self.player_S.name == ai_player.name:
             if self.player_NS.life <= 0:
                 print(f"AI {self.player_S.name} wins: Opponent life={self.player_NS.life}")
                 self.winner = self.player_S
@@ -504,7 +504,7 @@ class GameState:
                 self.winner = self.player_NS
                 return +1  # AI wins
             elif self.player_NS.life <= 0:
-                print(f"AI {self.player_NS.name} loses: AI life={self.player_S.life}")
+                print(f"AI {self.player_NS.name} loses: AI life={self.player_NS.life}")
                 self.winner = self.player_S
                 return -1  # AI loses
         print("Game continues.")

@@ -30,16 +30,28 @@ class Node:
         """Check if all possible actions have been tried."""
         tried_actions = [child.state.action_taken for child in self.children]
         all_actions = self.state.legal_actions()
-        untried_actions = [
-            action for action in all_actions if action not in tried_actions
-        ]
-        print(f" AHAHHA {untried_actions} HAHAHAHA")
+        # Do this by id right now actions are added to tried, but not removed from untried. Do the same bellow
+        print(f"TEST {all_actions}")
+        if all_actions != [False]:
+            tried_action_id = {action["id"] for action in tried_actions}
+            untried_actions = [
+                action for action in all_actions if action["id"] not in tried_action_id
+            ]
+            
+            print(f"Tried action IDs {tried_action_id}")
+            print(f"Tried actions {tried_actions} LENGTH ({len(tried_actions)})")
+            print(f"Untried actions {untried_actions} LENGTH ({len(untried_actions)})")
+            print(f"All actions {all_actions} LENGTH ({len(all_actions)})")
+        else:
+            untried_actions = []
+            
         return len(untried_actions) == 0
 
     def best_child(self, exploration_weight=0.5):
         """Choose the best child node based on UCB."""
         best_score = -float('inf')
         best_child = None
+        
         for child in self.children:
             # Calculate UCB score
             exploitation = child.value / (child.visits + 1e-6)
@@ -48,6 +60,8 @@ class Node:
             if ucb_score > best_score:
                 best_score = ucb_score
                 best_child = child
+        print(best_child)
+        print(self.children)
         return best_child
 
     def update(self, result):
@@ -61,6 +75,11 @@ class Node:
         untried_actions = [
             action for action in self.state.legal_actions() if action not in tried_actions
         ]
+        
+        print(f"Tried actions {tried_actions}")
+        print(f"Untried actions {untried_actions}")
+        print(f"All actions {self.state.legal_actions()}")
+        
         if not untried_actions:
             return None  # No actions to expand
         action = random.choice(untried_actions)
@@ -70,8 +89,13 @@ class Node:
         new_state.action_taken = action
         child_node = Node(new_state, parent=self)
         
+        
 
         self.children.append(child_node)
+        
+        print(child_node)
+        print(self.children)
+        
         return child_node
 
 
@@ -83,25 +107,26 @@ def simulate(state, ai):
         legal_actions = stato.legal_actions()
         action = random.choice(legal_actions)
         stato.execute_action(action)
-        
+        print(f"{stato.get_result(ai)} this")
     return stato.get_result(ai)
 
 def mcts(root,ai, iterations=10):
     """Perform MCTS to find the best action."""
     for _ in range(iterations):
         node = root
-
+        print(node)
         # Selection
         while not node.state.is_terminal() and node.is_fully_expanded():
             node = node.best_child()
-
+            print(node)
         # Expansion
         if not node.state.is_terminal():
 
             node = node.expand()
-
+            print(node)
         # Simulation
         result = simulate(node.state, ai)
+        print(result)
         # Backpropagation
         while node is not None:
             print(f"this {node.state.action_taken}")
@@ -113,18 +138,18 @@ def mcts(root,ai, iterations=10):
 
 
 if __name__ == "__main__":
-    ai = player2
+    ai = player1
     wins = 0
     acts = []
     for _ in range(0,1,1):
         initial_state = state
         root = Node(initial_state)
-        
-        while not root.state.is_terminal():
+        i=0
+        while not root.state.is_terminal() and i < 20:
             if root.state.player_S.name == ai.name:
                 
                 
-                root = mcts(root,ai, iterations=10)
+                root = mcts(root,ai, iterations=5)
                 if root:
                     if root.state.action_taken:
                         acts.append(f"Best action: {root.state.action_taken["type"]} value {root.value}")
@@ -137,6 +162,8 @@ if __name__ == "__main__":
                 actions = root.state.legal_actions()
                 action = random.choice(actions)
                 root.state.execute_action(action)
+            
+            i+=1
             
 
         print(f"{root.state.player_AP.name}  {root.state.player_AP.life}")
