@@ -36,7 +36,7 @@ def build_random_deck(deck_size=60):
     card_names = list(Creature_Card_Registry.keys())  
     land_card_names = list(Land_Card_Registry.keys())
     instant_card_names = list(Instant_Card_Registry.keys())
-    enchantment_card_names = list(Enchantment_Card_Registry)
+    enchantment_card_names = list(Enchantment_Card_Registry.keys())
     deck = []
     
     for _ in range((deck_size-30)):
@@ -154,82 +154,82 @@ def main_phase_2(playerAP:Player,playerNAP:Player,state:GameState):
         
         
         
-def battle_phase(player_atk:Player,player_def:Player):
+# def battle_phase(player_atk:Player,player_def:Player):
     
-    for creature in player_atk.board:           # Manifold Mouse effect
-        if creature.name == "Manifold Mouse":   
-            buff = random.choice(["trample"])   # UN "double strike" vajag vēl!
-            controlled_mouses = [creature for creature in player_atk.board if creature.is_mouse == True]
-            mouse = random.choice(controlled_mouses)
-            # Valiant effect activation!
-            print(f"Manifold mouse effect gave {buff} to {mouse.name} until EOT.")
+#     for creature in player_atk.board:           # Manifold Mouse effect
+#         if creature.name == "Manifold Mouse":   
+#             buff = random.choice(["trample"])   # UN "double strike" vajag vēl!
+#             controlled_mouses = [creature for creature in player_atk.board if creature.is_mouse == True]
+#             mouse = random.choice(controlled_mouses)
+#             # Valiant effect activation!
+#             print(f"Manifold mouse effect gave {buff} to {mouse.name} until EOT.")
         
-            if buff == "trample":
-                mouse.trample_eot == True
-            elif buff == "double_strike":
-                pass
+#             if buff == "trample":
+#                 mouse.trample_eot == True
+#             elif buff == "double_strike":
+#                 pass
         
-    for creature in player_atk.board:
-        if creature.tapped == False:
-            if random.choice([1,1]) == 1:       # Uzbrūk vienmēr ar visiem
-                creature.attacking = True
-                creature.tapped = True
-                print(f"{creature.power}/{creature.toughness} {creature.name} is attacking {player_def.name}")
+#     for creature in player_atk.board:
+#         if creature.tapped == False:
+#             if random.choice([1,1]) == 1:       # Uzbrūk vienmēr ar visiem
+#                 creature.attacking = True
+#                 creature.tapped = True
+#                 print(f"{creature.power}/{creature.toughness} {creature.name} is attacking {player_def.name}")
         
-    attackers = [creature for creature in player_atk.board if creature.attacking is True]
-    n=0
-    attack_block_set = []
-    if attackers:
-        for blocker in player_def.board:
-            if random.choice([1,2]) == 1:
-                to_block = random.choice(attackers)
-                if not (to_block.flying==True and blocker.flying==False):   # only 1 out of 4 cases when cannot block
-                    blocker.blocked_creature_id = to_block.id
-                else:
-                    print(f"Couldn't block, attacker {to_block.name} flying: {to_block.flying}, blocker {blocker.name} flying: {blocker.flying}")
+#     attackers = [creature for creature in player_atk.board if creature.attacking is True]
+#     n=0
+#     attack_block_set = []
+#     if attackers:
+#         for blocker in player_def.board:
+#             if random.choice([1,2]) == 1:
+#                 to_block = random.choice(attackers)
+#                 if not (to_block.flying==True and blocker.flying==False):   # only 1 out of 4 cases when cannot block
+#                     blocker.blocked_creature_id = to_block.id
+#                 else:
+#                     print(f"Couldn't block, attacker {to_block.name} flying: {to_block.flying}, blocker {blocker.name} flying: {blocker.flying}")
                 
             
-        for attacker in attackers:
-            blockers = [blocker for blocker in player_def.board if blocker.blocked_creature_id == attacker.id]
-            if blockers:
-                if (attacker.menace == True and len(blockers) >= 2) or attacker.menace == False:    # checks menace condition
-                    for blocker in blockers:
-                        if blocker.power <= 0:
-                            blocker.power = 0
-                        if attacker.power <= 0:
-                            attacker.power = 0
-                        print(f"{blocker.power}/{blocker.toughness} {blocker.name} is blocking {attacker.power}/{attacker.toughness} {attacker.name}")
+#         for attacker in attackers:
+#             blockers = [blocker for blocker in player_def.board if blocker.blocked_creature_id == attacker.id]
+#             if blockers:
+#                 if (attacker.menace == True and len(blockers) >= 2) or attacker.menace == False:    # checks menace condition
+#                     for blocker in blockers:
+#                         if blocker.power <= 0:
+#                             blocker.power = 0
+#                         if attacker.power <= 0:
+#                             attacker.power = 0
+#                         print(f"{blocker.power}/{blocker.toughness} {blocker.name} is blocking {attacker.power}/{attacker.toughness} {attacker.name}")
 
-                        bt = blocker.toughness
-                        ap = attacker.power
-                        bp = blocker.power
+#                         bt = blocker.toughness
+#                         ap = attacker.power
+#                         bp = blocker.power
                         
-                        blocker.toughness -= ap
-                        attacker.toughness -= bp
-                        attacker.power -= bt
+#                         blocker.toughness -= ap
+#                         attacker.toughness -= bp
+#                         attacker.power -= bt
 
-                    if (attacker.trample==True or attacker.trample_eot==True) and attacker.power>0:    # for remaining power, and doesn't need toughness check?
-                        print(f"{attacker.power}/{attacker.toughness} {attacker.name} deals Trample damage to Player {player_def.name}.")
-                        player_def.life -= attacker.power
-                        print(f"{player_def.name} has {player_def.life} life left")
-                elif attacker.menace == True and len(blockers) == 1:
-                    print(f"One blocker {blockers[0].name} cannot block {attacker.name} with Menace")
-            else:
-                print(f"{attacker.power}/{attacker.toughness} {attacker.name} deals damage to Player {player_def.name}.")
-                player_def.life -= attacker.power
-                print(f"{player_def.name} has {player_def.life} life left")
+#                     if (attacker.trample==True or attacker.trample_eot==True) and attacker.power>0:    # for remaining power, and doesn't need toughness check?
+#                         print(f"{attacker.power}/{attacker.toughness} {attacker.name} deals Trample damage to Player {player_def.name}.")
+#                         player_def.life -= attacker.power
+#                         print(f"{player_def.name} has {player_def.life} life left")
+#                 elif attacker.menace == True and len(blockers) == 1:
+#                     print(f"One blocker {blockers[0].name} cannot block {attacker.name} with Menace")
+#             else:
+#                 print(f"{attacker.power}/{attacker.toughness} {attacker.name} deals damage to Player {player_def.name}.")
+#                 player_def.life -= attacker.power
+#                 print(f"{player_def.name} has {player_def.life} life left")
                 
-        dead_creatures_atk = [creature.id for creature in player_atk.board if creature.toughness <= 0]
-        for dead_creature_id in dead_creatures_atk:   
-            dead_creature = next((creature for creature in player_atk.board if creature.id == dead_creature_id), None)
-            if dead_creature:
-                dead_creature.leaves_battlefield(player_atk, player_def)
+#         dead_creatures_atk = [creature.id for creature in player_atk.board if creature.toughness <= 0]
+#         for dead_creature_id in dead_creatures_atk:   
+#             dead_creature = next((creature for creature in player_atk.board if creature.id == dead_creature_id), None)
+#             if dead_creature:
+#                 dead_creature.leaves_battlefield(player_atk, player_def)
                 
-        dead_creatures_def = [creature.id for creature in player_def.board if creature.toughness <= 0]
-        for dead_creature_id in dead_creatures_def:   
-            dead_creature = next((creature for creature in player_def.board if creature.id == dead_creature_id), None)
-            if dead_creature:
-                dead_creature.leaves_battlefield(player_def, player_atk)
+#         dead_creatures_def = [creature.id for creature in player_def.board if creature.toughness <= 0]
+#         for dead_creature_id in dead_creatures_def:   
+#             dead_creature = next((creature for creature in player_def.board if creature.id == dead_creature_id), None)
+#             if dead_creature:
+#                 dead_creature.leaves_battlefield(player_def, player_atk)
             
 
     
@@ -287,6 +287,87 @@ def play_game(players: list[Player]):
 
         
     print("Game over!")      
+
+#prampampam DUBULTĀ, lai varēja Compare files darīt vieglākai pārkopēšanai uz jauno metodi. ja šo failu plāno izmantot,
+# pareizā battle_phase pozīcija ir tur augstāk. Bet jāiekopē šis kods no zemāk, kaut kas maznedaudz pamainīts.
+
+def battle_phase(player_atk:Player,player_def:Player):
+    
+    for creature in player_atk.board:           # Manifold Mouse effect
+        if creature.name == "Manifold Mouse":   
+            buff = random.choice(["trample"])   # UN "double strike" vajag vēl!
+            controlled_mouses = [creature for creature in player_atk.board if creature.is_mouse == True]
+            mouse = random.choice(controlled_mouses)
+            # Valiant effect activation needed!
+            print(f"Manifold mouse effect gave {buff} to {mouse.name} until EOT.")
+        
+            if buff == "trample":
+                mouse.trample_eot == True
+            elif buff == "double_strike":
+                pass     # for now
+        
+    for creature in player_atk.board:
+        if creature.tapped == False:
+            if random.choice([1,1]) == 1:       # Uzbrūk vienmēr ar visiem
+                creature.attacking = True
+                creature.tapped = True
+                print(f"{creature.power}/{creature.toughness} {creature.name} is attacking {player_def.name}")
+        
+    attackers = [creature for creature in player_atk.board if creature.attacking is True]
+    n=0
+    attack_block_set = []
+    if attackers:
+        for blocker in player_def.board:
+            if random.choice([1,2]) == 1:
+                to_block = random.choice(attackers)
+                if not (to_block.flying==True and blocker.flying==False):   # only 1 out of 4 cases when cannot block
+                    blocker.blocked_creature_id = to_block.id
+                else:
+                    print(f"Couldn't block, attacker {to_block.name} flying: {to_block.flying}, blocker {blocker.name} flying: {blocker.flying}")
+                
+            
+        for attacker in attackers:
+            blockers = [blocker for blocker in player_def.board if blocker.blocked_creature_id == attacker.id]
+            if blockers:
+                if (attacker.menace == True and len(blockers) >= 2) or attacker.menace == False:    # checks menace condition
+                    for blocker in blockers:
+                        if attacker.power <= 0:
+                            attacker.power = 0
+                        if blocker.power <= 0:
+                            blocker.power = 0
+                        print(f"{blocker.power}/{blocker.toughness} {blocker.name} is blocking {attacker.power}/{attacker.toughness} {attacker.name}")
+
+                        bt = blocker.toughness
+                        ap = attacker.power
+                        bp = blocker.power
+                        
+                        blocker.toughness -= ap
+                        attacker.toughness -= bp
+                        attacker.power -= bt
+
+                    if (attacker.trample==True or attacker.trample_eot==True) and attacker.power>0:    # for remaining power, and doesn't need toughness check?
+                        print(f"{attacker.power}/{attacker.toughness} {attacker.name} deals Trample damage to Player {player_def.name}.")
+                        player_def.life -= attacker.power
+                        print(f"{player_def.name} has {player_def.life} life left")
+                elif attacker.menace == True and len(blockers) == 1:
+                    print(f"One blocker {blockers[0].name} cannot block {attacker.name} with Menace")
+            else:
+                print(f"{attacker.power}/{attacker.toughness} {attacker.name} deals damage to Player {player_def.name}.")
+                player_def.life -= attacker.power
+                print(f"{player_def.name} has {player_def.life} life left")
+                
+        dead_creatures_atk = [creature.id for creature in player_atk.board if creature.toughness <= 0]
+        for dead_creature_id in dead_creatures_atk:   
+            dead_creature = next((creature for creature in player_atk.board if creature.id == dead_creature_id), None)
+            if dead_creature:
+                dead_creature.leaves_battlefield(player_atk, player_def)
+                
+        dead_creatures_def = [creature.id for creature in player_def.board if creature.toughness <= 0]
+        for dead_creature_id in dead_creatures_def:   
+            dead_creature = next((creature for creature in player_def.board if creature.id == dead_creature_id), None)
+            if dead_creature:
+                dead_creature.leaves_battlefield(player_def, player_atk)
+
 
 
 deck1 = build_random_deck()

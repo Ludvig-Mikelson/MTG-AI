@@ -21,7 +21,7 @@ class Player:
 # Jebšu, ko darīt ar "target creature" ?
 
 class CreatureCard(Card):
-    def __init__(self, name: str, mana_cost: int, og_power: int, og_toughness: int, cast_effects=None, later_effects=None, deathrattle=None, 
+    def __init__(self, name: str, mana_cost: int, og_power: int, og_toughness: int, cast_effects=None, later_effects=None, deathrattle=None,
                  is_token=False, auras = [], tapped = True, flying = False, is_mouse = False, trample = False, trample_eot = False, menace = False):
         self.id = str(uuid.uuid4())
         self.name = name
@@ -96,7 +96,7 @@ class CreatureCard(Card):
             self.counter_power = 0
             self.counter_toughness = 0
             print(f"{self.name} leaves the battlefield.")
-                
+
         if len(self.auras) > 0:
             for aura in self.auras:
                 aura.leaves_battlefield(player)
@@ -214,13 +214,13 @@ class EnchantmentCard(Card):
     #     for effect in self.effects:
     #         effect.apply(self,target)          
         
-    def play(self,player,state,target_creature):
+    def play(self,player,state,target_creatures):
         if self.name == "Demonic Ruckus":
             if player.mana_pool >= self.mana_cost:
                 print(f"{player.name} plays {self.name}")
                 player.hand.remove(self)
                 player.mana_pool -= self.mana_cost
-                target = random.choice(target_creature)
+                target = random.choice(target_creatures)
                 # player.graveyard.append(self)
                     
                 # self.activate_effects(target, player)
