@@ -59,7 +59,7 @@ class CreatureCard(Card):
                     
     def activate_prowess(self):
         for effect in self.prowess:
-            print(f"this is self {self}")
+            #print(f"this is self {self}")
             effect.apply(self)        # So all creature effects have to take in creature and player.
     
     def activate_valiant(self, player):
@@ -67,14 +67,14 @@ class CreatureCard(Card):
             effect.apply(self, player)        # So all creature effects have to take in creature and player.
 
     def activate_deathrattle_dmg(self, player_op, player):
-        print(f"!!!!!!!!!!!! Heartfire Hero power for deathrattle, is correct?: {self.og_power + self.counter_power}")
+        #print(f"!!!!!!!!!!!! Heartfire Hero power for deathrattle, is correct?: {self.og_power + self.counter_power}")
         for effect in self.deathrattle_dmg:
             effect.damage = self.og_power + self.counter_power
             effect.apply(self, player_op)        # So all creature effects have to take in creature and player.
 
     def play(self,player):
         
-        print(f"{player.name} plays {self.name}")
+        #print(f"{player.name} plays {self.name}")
         player.board.append(self)
         player.hand.remove(self)        # un manapool cena tad ir jau samaksāta pirms šejienes?
             
@@ -87,12 +87,12 @@ class CreatureCard(Card):
             
     def attack(self,player):
         self.attacking = True
-        print(f"{player.name}'s {self.name} declares attack")
+        #print(f"{player.name}'s {self.name} declares attack")
         
     def block(self,player,attacker):
         self.blocking = True
         attacker.blockers.append(self)
-        print(f"{player.name}'s {self.name} declares block on {attacker.name}")
+        #print(f"{player.name}'s {self.name} declares block on {attacker.name}")
         
             
 
@@ -101,7 +101,7 @@ class CreatureCard(Card):
         if self.is_token:
             # Remove token from the player's battlefield
             player.board.remove(self)
-            print(f"{self.name} (token) is removed from the game")
+            #print(f"{self.name} (token) is removed from the game")
         else:            
             # Heartfire Hero Deathrattle only inside:
             self.activate_deathrattle_dmg(player_op, player)
@@ -110,14 +110,14 @@ class CreatureCard(Card):
             #     # deathrattle.apply(self, player)   # Doesn't work if the effects have different specifics
 
             #     if isinstance(deathrattle, ef.DmgToAny):       # Heartfire Hero
-            #         print(f"!!!!!!!!!!!! Heartfire Hero power for deathrattle, is correct?: {self.og_power + self.counter_power}")
+            #         #print(f"!!!!!!!!!!!! Heartfire Hero power for deathrattle, is correct?: {self.og_power + self.counter_power}")
             #         deathrattle.apply(self, player_op, player, damage = self.og_power + self.counter_power)
             
             player.board.remove(self)
             player.graveyard.append(self)
             self.counter_power = 0
             self.counter_toughness = 0
-            print(f"{self.name} leaves the battlefield.")
+            #print(f"{self.name} leaves the battlefield.")
 
         if len(self.auras) > 0:
             for aura in self.auras:
@@ -125,7 +125,7 @@ class CreatureCard(Card):
                 
 
     #def __str__(self):
-        # Return a human-readable string when printing the object
+        # Return a human-readable string when #printing the object
         #return f"{self.name} (Mana: {self.mana_cost}, Power: {self.power}, Toughness: {self.toughness}, ID: {self.id})"
     
 class LandCard(Card):
@@ -137,16 +137,16 @@ class LandCard(Card):
         
     def play(self,player):
         
-        print(f"{player.name} plays {self.name}")
+        #print(f"{player.name} plays {self.name}")
         player.land_board.append(self)
         player.hand.remove(self)
         player.played_land = True
-        print("test")
+        #print("test")
             
         
     def tap(self,player):
         if self.tapped == False:
-            print(f"{player.name} tapped {self.name} for mana")
+            #print(f"{player.name} tapped {self.name} for mana")
             self.tap_effects[0].apply(player)
 
             self.tapped = True
@@ -166,7 +166,7 @@ class InstantCard(Card):
             
     def play(self,player, target):  
 
-        print(f"{player.name} plays {self.name}")
+        #print(f"{player.name} plays {self.name}")
         player.mana_pool -= self.mana_cost
         player.graveyard.append(self)
             
@@ -197,7 +197,7 @@ class InstantCard(Card):
 
 
     
-        # print(f"{player.name} plays {self.name}")
+        # #print(f"{player.name} plays {self.name}")
         # #player.hand.remove(self)
         # player.graveyard.append(self)
                 
@@ -238,7 +238,7 @@ class EnchantmentCard(Card):
     def play(self,player,target_creatures):
         if self.name == "Demonic Ruckus":
             if player.mana_pool >= self.mana_cost:          # Vai šeit vajag šo pārbaudi?
-                print(f"{player.name} plays {self.name}")
+                #print(f"{player.name} plays {self.name}")
                 player.hand.remove(self)
                 player.mana_pool -= self.mana_cost
                 target = random.choice(target_creatures)
@@ -267,14 +267,16 @@ class EnchantmentCard(Card):
                         #         effect.apply(target, player)
 
             else:
-                print(f"Not enough mana to play {self.name}")
+                g=1
+                #print(f"Not enough mana to play {self.name}")
         else:
-            print("ERROR: name for Enchantment not in options")
+            g=1
+            #print("ERROR: name for Enchantment not in options")
 
 
 
             # if player.mana_pool >= self.mana_cost:            # šeit vajag šo pārbaudi?
-            #     print(f"{player.name} plays {self.name}")
+            #     #print(f"{player.name} plays {self.name}")
             #     creaturecard.auras.append(self)
             #     player.hand.remove(self)
             #     player.mana_pool -= self.mana_cost
@@ -293,4 +295,4 @@ class EnchantmentCard(Card):
     #     self.activate_effects(player)
     #     player.board.remove(self)
     #     player.graveyard.append(self)
-    #     print(f"{self.name} leaves the battlefield.")    
+    #     #print(f"{self.name} leaves the battlefield.")    

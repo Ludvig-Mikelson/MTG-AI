@@ -113,7 +113,7 @@ def simulate(state, ai):
     if stato.action_taken["type"] == "pass":
         return 0
     i = 0
-    while not stato.is_terminal() and i < 40:
+    while not stato.is_terminal() and i < 30:
 
         legal_actions = stato.legal_actions()
         action = random.choice(legal_actions)
@@ -130,8 +130,8 @@ def mcts(root,ai, iterations=10):
     for _ in range(iterations):
         node = root
         
-        #random.shuffle(node.state.player_S.deck)
-        #random.shuffle(node.state.player_NS.deck)
+        random.shuffle(node.state.player_S.deck)
+        random.shuffle(node.state.player_NS.deck)
         print(node)
         # Selection
         while not node.state.is_terminal() and node.is_fully_expanded():
@@ -161,7 +161,7 @@ def mcts(root,ai, iterations=10):
 
 
 if __name__ == "__main__":
-    ai = player1
+    ai = player2
     wins = 0
     not_finished = 0
     acts = []
@@ -174,7 +174,7 @@ if __name__ == "__main__":
                 
                 print(f"{root.state.player_S}")
                 print(f"{root.state.player_NS}")
-                root = mcts(root,ai, iterations=5)
+                root = mcts(root,ai, iterations=6)
                 if root:
                     if root.state.action_taken:
                         acts.append(f"Best action: {root.state.action_taken["type"]} value {root.value} phase {root.state.phase}, #{i}")

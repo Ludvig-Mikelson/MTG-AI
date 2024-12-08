@@ -67,15 +67,15 @@ def build_random_deck(deck_size=60):
 def draw_card(player):
     if len(player.deck) > 0:
         player.hand.append(player.deck.pop())  
-        print(f"{player.name} draws a card")   
+        #print(f"{player.name} draws a card")   
     else:
         "g"
-        print("No more cards")
+        #print("No more cards")
         
     hand=[]
     for card in player.hand:
         hand.append(card.name)
-    print(player.name,"'s hand: ", hand)
+    #print(player.name,"'s hand: ", hand)
         
 
     
@@ -94,9 +94,9 @@ def begin_phase(state):
     board=[]
     for card in state.player_AP.board:
         board.append(card.name)
-    print(state.player_AP.name,"'s board: ", board)
+    #print(state.player_AP.name,"'s board: ", board)
     
-    print("Begin Phase")
+    #print("Begin Phase")
 
     
 def main_phase_1(state):
@@ -109,7 +109,7 @@ def main_phase_1(state):
     state.player_NAP.passed = False
     
     state.phase = "main phase 1"
-    print(f"{state.player_AP.name} Main Phase 1")
+    #print(f"{state.player_AP.name} Main Phase 1")
  
  
 # Battle phase is divided in 3 phases, one where AP can declare attacks, one where NAP can declare blocks and one where it resolves
@@ -123,21 +123,21 @@ def attack_phase(state):
     state.player_NAP.passed = False
     
     state.phase = "declare attack phase"
-    print(f"{state.player_AP.name} declare attack phase")
+    #print(f"{state.player_AP.name} declare attack phase")
     
 def block_phase(state):
     state.player_AP.passed = False
     state.player_NAP.passed = False
     
     state.phase = "declare block phase"
-    print(f"{state.player_AP.name} declare block phase")    
+    #print(f"{state.player_AP.name} declare block phase")    
     
 def resolve_phase(state):
     state.player_AP.passed = False
     state.player_NAP.passed = False
     
     state.phase = "resolve battle phase"
-    print(f"{state.player_AP.name} resolve battle phase")  
+    #print(f"{state.player_AP.name} resolve battle phase")  
     
                 
 def main_phase_2(state):
@@ -148,7 +148,7 @@ def main_phase_2(state):
     state.player_NAP.mana_pool = 0
 
     state.phase = "main phase 2"
-    print(f"{state.player_AP.name} Main Phase 2")
+    #print(f"{state.player_AP.name} Main Phase 2")
     
             
 
@@ -203,7 +203,7 @@ def resolve_combat(GameState):
                 mouse.trample_eot == True
             elif buff == "double_strike":
                 pass                            # for now
-            print(f"Manifold mouse effect gave {buff} to {mouse.name} until EOT.")
+            #print(f"Manifold mouse effect gave {buff} to {mouse.name} until EOT.")
 
 ######
 # Šādi strādā Flying, nezinu kur tas jāimplementē šobrīd īsti, atstāšu šeit:
@@ -212,7 +212,7 @@ def resolve_combat(GameState):
 # if not (to_block.flying==True and blocker.flying==False):   # only 1 out of 4 cases when cannot block
 #     blocker.blocked_creature_id = to_block.id
 # else:
-#     print(f"Couldn't block, attacker {to_block.name} flying: {to_block.flying}, blocker {blocker.name} flying: {blocker.flying}")
+#     #print(f"Couldn't block, attacker {to_block.name} flying: {to_block.flying}, blocker {blocker.name} flying: {blocker.flying}")
 
     
     for attacker in creatures:
@@ -230,7 +230,7 @@ def resolve_combat(GameState):
                         if blocker.toughness <= 0:
                             blocker.toughness = 0    
                             
-                        print(f"{blocker.power}/{blocker.toughness} {blocker.name} is blocking {attacker.power}/{attacker.toughness} {attacker.name}")
+                        #print(f"{blocker.power}/{blocker.toughness} {blocker.name} is blocking {attacker.power}/{attacker.toughness} {attacker.name}")
                         
                         bt = blocker.toughness
                         ap = attacker.power
@@ -244,17 +244,18 @@ def resolve_combat(GameState):
                     #if attacker.trample:
                         #GameState.player_NAP.life -= attacker.power
                     if (attacker.trample==True or attacker.trample_eot==True) and attacker.power>0:    # for remaining power, and doesn't need toughness check?
-                        print(f"{attacker.power}/{attacker.toughness} {attacker.name} deals Trample damage to Player {GameState.player_NAP.name}.")
+                        #print(f"{attacker.power}/{attacker.toughness} {attacker.name} deals Trample damage to Player {GameState.player_NAP.name}.")
                         GameState.player_NAP.life -= attacker.power
-                        print(f"{GameState.player_NAP.name} has {GameState.player_NAP.life} life left")
+                        #print(f"{GameState.player_NAP.name} has {GameState.player_NAP.life} life left")
                 elif attacker.menace == True and len(attacker.blockers) == 1:
-                    print(f"One blocker {attacker.blockers[0].name} cannot block {attacker.name} with Menace")
+                    g=1
+                    #print(f"One blocker {attacker.blockers[0].name} cannot block {attacker.name} with Menace")
 
             else:
                 
-                print(f"{attacker.power}/{attacker.toughness} {attacker.name} deals damage to Player {GameState.player_NAP.name}.")
+                #print(f"{attacker.power}/{attacker.toughness} {attacker.name} deals damage to Player {GameState.player_NAP.name}.")
                 GameState.player_NAP.life -= attacker.power
-                print(f"{GameState.player_NAP.name} has {GameState.player_NAP.life} life left")
+                #print(f"{GameState.player_NAP.name} has {GameState.player_NAP.life} life left")
                 
     for creature in GameState.player_AP.board:
         if creature.toughness <= 0:
@@ -420,10 +421,10 @@ def non_action(player_s):
             
             
 def choose_action(action, GameState):
-    #print("Choose Action")
+    ##print("Choose Action")
     
     # If there are any actions that can be made randomly choose to take random action or not
-    print(f"{GameState.player_S.name}'s priority")
+    #print(f"{GameState.player_S.name}'s priority")
     if action:
         
         
@@ -436,7 +437,7 @@ def choose_action(action, GameState):
                 
         elif action["type"] == "pass":
             GameState.player_S.passed = True
-            print(f"{GameState.player_S.name} passed")
+            #print(f"{GameState.player_S.name} passed")
             
             
                 
@@ -462,19 +463,19 @@ def choose_action(action, GameState):
             
         
             
-        #print(GameState.phase)
+        ##print(GameState.phase)
         # Adjust this when action can be skipped
         if action != None:
             if action["type"] != "pass":
                 GameState.player_S.mana_pool -= action["cost"]
-                print(f"{action["player"].name}, {action["type"]}")
+                #print(f"{action["player"].name}, {action["type"]}")
                 GameState.stack.append(action)
     
             
             
     # If the player choosing to attack or block doesn't, move to after phase where no blcoks or attacks can be declared
-    print(f"This is an action {action}")
-    print(f"this is a phase {GameState.phase}")
+    #print(f"This is an action {action}")
+    #print(f"this is a phase {GameState.phase}")
     if action:      
         if GameState.phase == "just attacks" and action["type"] == "pass":
             GameState.phase = "after attack"
@@ -491,24 +492,24 @@ def choose_action(action, GameState):
     
     #else:
       #  GameState.player_S.passed = True
-        #print(f"{GameState.player_S.name} passed")
+        ##print(f"{GameState.player_S.name} passed")
         
  
     
 def execute_stack(GameState):
-    #print("Execute Stack")
+    ##print("Execute Stack")
     # Stack is executed in reverse order from play order
     stack = list(reversed(GameState.stack))
     
-    print(stack)
+    #print(stack)
     for action in stack:
         
         if action["target"] is not None:
             
-            #print(action["action"])
+            ##print(action["action"])
             action["action"](action["player"], action["target"])
         else:
-            #print(action["target"])
+            ##print(action["target"])
             action["action"](action["player"])
             
     
@@ -519,7 +520,7 @@ def execute_stack(GameState):
         
 
 def change_phase(GameState):
-    #print("Change Phase")
+    ##print("Change Phase")
     
     current_phase = GameState.phase
     phase_actions[current_phase](GameState)
@@ -529,7 +530,7 @@ def change_phase(GameState):
 
 
 #def add_to_stack(GameState):
-    #print("Add to Stack")
+    ##print("Add to Stack")
     #actions = legal_actions(GameState)
     #action = choose_action(actions, GameState)
     
@@ -559,50 +560,50 @@ class GameState:
         if self.player_S.name == ai_player.name:
             
             if self.player_NS.life <= 0:
-                print(f"AI {self.player_S.name} wins: Opponent life={self.player_NS.life}")
+                #print(f"AI {self.player_S.name} wins: Opponent life={self.player_NS.life}")
                 self.winner = self.player_S
                 score +=1  # AI wins
             elif self.player_S.life <= 0:
-                print(f"AI {self.player_S.name} loses: AI life={self.player_S.life}")
+                #print(f"AI {self.player_S.name} loses: AI life={self.player_S.life}")
                 self.winner = self.player_NS
                 score -=1  # AI loses
             else:
                 score += len(self.player_S.board) * 0.01
-                score += (5 - self.player_NS.life) * 0.01
-                score += (self.player_S.life - 5) * 0.01
+                score += (5 - self.player_NS.life) * 0.03
+                score += (self.player_S.life - 5) * 0.02
         else:
             
             if self.player_S.life <= 0:
-                print(f"AI {self.player_NS.name} wins: Opponent life={self.player_S.life}")
+                #print(f"AI {self.player_NS.name} wins: Opponent life={self.player_S.life}")
                 self.winner = self.player_NS
                 score +=1  # AI wins
             elif self.player_NS.life <= 0:
-                print(f"AI {self.player_NS.name} loses: AI life={self.player_NS.life}")
+                #print(f"AI {self.player_NS.name} loses: AI life={self.player_NS.life}")
                 self.winner = self.player_S
                 score -=1  # AI loses
             else:
                 score += len(self.player_NS.board) * 0.01
-                score += (5 - self.player_S.life) * 0.01
-                score += (self.player_NS.life - 5) * 0.01
-        print("Game continues.")
+                score += (5 - self.player_S.life) * 0.03
+                score += (self.player_NS.life - 5) * 0.02
+        #print("Game continues.")
         
         return score  
     
     def is_terminal(self):
         if self.player_AP.life <= 0 or self.player_NAP.life <= 0:
-            print(f"Terminal state reached: player_AP.life={self.player_AP.life}, player_NAP.life={self.player_NAP.life}")
+            #print(f"Terminal state reached: player_AP.life={self.player_AP.life}, player_NAP.life={self.player_NAP.life}")
             return True
         return False
         
     def determine_winner(self):
-        print(f"{self.player_AP.name} {self.player_AP.life}")
-        print(f"{self.player_NAP.name} {self.player_NAP.life}")
+        #print(f"{self.player_AP.name} {self.player_AP.life}")
+        #print(f"{self.player_NAP.name} {self.player_NAP.life}")
         
         if self.player_S.life <= 0:
-            print("did it go here")
+            #print("did it go here")
             self.winner = self.player_NS
         elif self.player_NS.life <= 0:
-            print("did it go down here")
+            #print("did it go down here")
             self.winner = self.player_S
         else:
             self.winner = None 
@@ -722,7 +723,7 @@ class GameState:
             play_instant_legal_actions(player_s, player_ns, actions)
             
             
-        print(f"Legal actions for {self.phase}: {actions}")  
+        #print(f"Legal actions for {self.phase}: {actions}")  
             
         if not actions:
             actions = [non_action(player_s)]
@@ -736,17 +737,17 @@ class GameState:
 
             
             
-            print(f"Executing action: {action}")
+            #print(f"Executing action: {action}")
             choose_action(action,self)
             
             # Execute stack if both players passed and there is anything to execute    
             if self.stack and self.player_AP.passed and self.player_NAP.passed:
-                print("Executing stack as both players passed.")
+                #print("Executing stack as both players passed.")
                 execute_stack(self)
                 
             # Change phase if no stack and both players pass        
             elif not self.stack and self.player_AP.passed and self.player_NAP.passed:
-                print(f"Changing phase from {self.phase}.")
+                #print(f"Changing phase from {self.phase}.")
                 
                 if self.phase == "resolve battle phase":
                     resolve_combat(self)
@@ -755,7 +756,7 @@ class GameState:
             
             # Keep prio on attacker or blocker during the just attacks/blocks phase 
             elif self.reset_prio == True:
-                print("Resetting priority to AP.")
+                #print("Resetting priority to AP.")
 
                 self.player_S = self.player_AP
                 self.player_NS = self.player_NAP
@@ -766,7 +767,7 @@ class GameState:
             # Switch between player adding to the stack
             else:
 
-                print("Switching priority.")
+                #print("Switching priority.")
             
                 self.player_S_copy = self.player_NS
                 self.player_NS_copy = self.player_S
