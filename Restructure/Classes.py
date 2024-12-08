@@ -141,7 +141,6 @@ class LandCard(Card):
         player.land_board.append(self)
         player.hand.remove(self)
         player.played_land = True
-        print("test")
             
         
     def tap(self,player):
