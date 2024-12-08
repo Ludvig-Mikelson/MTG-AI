@@ -96,7 +96,7 @@ def begin_phase(state):
         board.append(card.name)
     print(state.player_AP.name,"'s board: ", board)
     
-    print("Begin Phase")
+    # print("Begin Phase")
 
     
 def main_phase_1(state):
@@ -109,7 +109,7 @@ def main_phase_1(state):
     state.player_NAP.passed = False
     
     state.phase = "main phase 1"
-    print(f"{state.player_AP.name} Main Phase 1")
+    # print(f"{state.player_AP.name} Main Phase 1")
  
  
 # Battle phase is divided in 3 phases, one where AP can declare attacks, one where NAP can declare blocks and one where it resolves
@@ -123,21 +123,21 @@ def attack_phase(state):
     state.player_NAP.passed = False
     
     state.phase = "declare attack phase"
-    print(f"{state.player_AP.name} declare attack phase")
+    # print(f"{state.player_AP.name} declare attack phase")
     
 def block_phase(state):
     state.player_AP.passed = False
     state.player_NAP.passed = False
     
     state.phase = "declare block phase"
-    print(f"{state.player_AP.name} declare block phase")    
+    # print(f"{state.player_AP.name} declare block phase")    
     
 def resolve_phase(state):
     state.player_AP.passed = False
     state.player_NAP.passed = False
     
     state.phase = "resolve battle phase"
-    print(f"{state.player_AP.name} resolve battle phase")  
+    # print(f"{state.player_AP.name} resolve battle phase")  
     
                 
 def main_phase_2(state):
@@ -148,7 +148,7 @@ def main_phase_2(state):
     state.player_NAP.mana_pool = 0
 
     state.phase = "main phase 2"
-    print(f"{state.player_AP.name} Main Phase 2")
+    # print(f"{state.player_AP.name} Main Phase 2")
     
             
 
@@ -202,18 +202,8 @@ def resolve_combat(GameState):
             if buff == "trample":
                 mouse.trample_eot == True
             elif buff == "double_strike":
-                pass                            # for now
+                pass       # for now
             print(f"Manifold mouse effect gave {buff} to {mouse.name} until EOT.")
-
-######
-# Šādi strādā Flying, nezinu kur tas jāimplementē šobrīd īsti, atstāšu šeit:
-######
-
-# if not (to_block.flying==True and blocker.flying==False):   # only 1 out of 4 cases when cannot block
-#     blocker.blocked_creature_id = to_block.id
-# else:
-#     print(f"Couldn't block, attacker {to_block.name} flying: {to_block.flying}, blocker {blocker.name} flying: {blocker.flying}")
-
     
     for attacker in creatures:
         if attacker.attacking:
@@ -389,20 +379,24 @@ def block_legal_actions(player_AP, player_NAP, actions):
     
     creatures_ap = player_AP.board
     creatures_nap = player_NAP.board
-    
     for creature_blk in creatures_nap:
         if creature_blk.tapped == False and creature_blk.blocking == False:
             for creature_atk in creatures_ap:
                 if creature_atk.attacking == True:
-                    actions.append({
-                        "type": "block",
-                        "id": creature_blk.id,  
-                        "name": creature_blk.name,
-                        "player": player_NAP,
-                        "target": creature_atk,
-                        "action": creature_blk.block,
-                        "cost": 0 
-                        })
+                    # Flying goes here:
+                    if not (creature_atk.flying==True and creature_blk.flying==False):   # only 1 out of 4 cases when cannot block
+                        actions.append({
+                            "type": "block",
+                            "id": creature_blk.id,  
+                            "name": creature_blk.name,
+                            "player": player_NAP,
+                            "target": creature_atk,
+                            "action": creature_blk.block,
+                            "cost": 0 
+                            })
+                    else:
+                        print(f"Couldn't block, attacker {creature_atk.name} flying: {creature_atk.flying}, blocker {creature_blk.name} flying: {creature_blk.flying}")
+
     
 
 def non_action(player_s):
@@ -423,7 +417,7 @@ def choose_action(action, GameState):
     #print("Choose Action")
     
     # If there are any actions that can be made randomly choose to take random action or not
-    print(f"{GameState.player_S.name}'s priority")
+    # print(f"{GameState.player_S.name}'s priority")
     if action:
         
         
@@ -436,7 +430,7 @@ def choose_action(action, GameState):
                 
         elif action["type"] == "pass":
             GameState.player_S.passed = True
-            print(f"{GameState.player_S.name} passed")
+            # print(f"{GameState.player_S.name} passed")
             
             
                 
@@ -467,14 +461,14 @@ def choose_action(action, GameState):
         if action != None:
             if action["type"] != "pass":
                 GameState.player_S.mana_pool -= action["cost"]
-                print(f"{action["player"].name}, {action["type"]}")
+                # print(f"{action["player"].name}, {action["type"]}")
                 GameState.stack.append(action)
     
             
             
     # If the player choosing to attack or block doesn't, move to after phase where no blcoks or attacks can be declared
-    print(f"This is an action {action}")
-    print(f"this is a phase {GameState.phase}")
+    # print(f"This is an action {action}")
+    # print(f"this is a phase {GameState.phase}")
     if action:      
         if GameState.phase == "just attacks" and action["type"] == "pass":
             GameState.phase = "after attack"
@@ -500,7 +494,7 @@ def execute_stack(GameState):
     # Stack is executed in reverse order from play order
     stack = list(reversed(GameState.stack))
     
-    print(stack)
+    # print(stack)
     for action in stack:
         
         if action["target"] is not None:
@@ -584,25 +578,25 @@ class GameState:
                 score += len(self.player_NS.board) * 0.01
                 score += (5 - self.player_S.life) * 0.01
                 score += (self.player_NS.life - 5) * 0.01
-        print("Game continues.")
+        # print("Game continues.")
         
         return score  
     
     def is_terminal(self):
         if self.player_AP.life <= 0 or self.player_NAP.life <= 0:
-            print(f"Terminal state reached: player_AP.life={self.player_AP.life}, player_NAP.life={self.player_NAP.life}")
+            # print(f"Terminal state reached: player_AP.life={self.player_AP.life}, player_NAP.life={self.player_NAP.life}")
             return True
         return False
         
     def determine_winner(self):
-        print(f"{self.player_AP.name} {self.player_AP.life}")
-        print(f"{self.player_NAP.name} {self.player_NAP.life}")
+        # print(f"{self.player_AP.name} {self.player_AP.life}")
+        # print(f"{self.player_NAP.name} {self.player_NAP.life}")
         
         if self.player_S.life <= 0:
-            print("did it go here")
+            # print("did it go here")
             self.winner = self.player_NS
         elif self.player_NS.life <= 0:
-            print("did it go down here")
+            # print("did it go down here")
             self.winner = self.player_S
         else:
             self.winner = None 
@@ -722,7 +716,7 @@ class GameState:
             play_instant_legal_actions(player_s, player_ns, actions)
             
             
-        print(f"Legal actions for {self.phase}: {actions}")  
+        # print(f"Legal actions for {self.phase}: {actions}")  
             
         if not actions:
             actions = [non_action(player_s)]
@@ -736,12 +730,12 @@ class GameState:
 
             
             
-            print(f"Executing action: {action}")
+            # print(f"Executing action: {action}")
             choose_action(action,self)
             
             # Execute stack if both players passed and there is anything to execute    
             if self.stack and self.player_AP.passed and self.player_NAP.passed:
-                print("Executing stack as both players passed.")
+                # print("Executing stack as both players passed.")
                 execute_stack(self)
                 
             # Change phase if no stack and both players pass        
@@ -755,7 +749,7 @@ class GameState:
             
             # Keep prio on attacker or blocker during the just attacks/blocks phase 
             elif self.reset_prio == True:
-                print("Resetting priority to AP.")
+                # print("Resetting priority to AP.")
 
                 self.player_S = self.player_AP
                 self.player_NS = self.player_NAP
@@ -766,7 +760,7 @@ class GameState:
             # Switch between player adding to the stack
             else:
 
-                print("Switching priority.")
+                # print("Switching priority.")
             
                 self.player_S_copy = self.player_NS
                 self.player_NS_copy = self.player_S
