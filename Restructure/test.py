@@ -8,9 +8,9 @@ import copy
 deck1 = en.build_deck(cr.creature_list, cr.instant_list)
 deck2 = en.build_deck(cr.creature_list, cr.instant_list)
 start_hand1 = deck1[:7]
-start_hand2 = deck2[:7]
+start_hand2 = deck2[:8]
 deck1 = deck1[7:]
-deck2 = deck2[7:]
+deck2 = deck2[8:]
         
 player1 = copy.deepcopy(cs.Player("Bob", start_hand1, deck1, [], [], [], 0, 5))
 player2 = copy.deepcopy(cs.Player("Alice", start_hand2, deck2, [], [], [], 0, 5))
@@ -110,9 +110,10 @@ class Node:
 def simulate(state, ai):
     """Simulate a random game from the given state."""
     stato = copy.deepcopy(state)
-    
+    if stato.action_taken["type"] == "pass":
+        return 0
     i = 0
-    while not stato.is_terminal():
+    while not stato.is_terminal() and i < 40:
 
         legal_actions = stato.legal_actions()
         action = random.choice(legal_actions)
@@ -160,14 +161,15 @@ def mcts(root,ai, iterations=10):
 
 
 if __name__ == "__main__":
-    ai = player2
+    ai = player1
     wins = 0
+    not_finished = 0
     acts = []
-    for _ in range(0,1,1):
+    for _ in range(0,5,1):
         initial_state = state
         root = Node(initial_state)
         i=0
-        while not root.state.is_terminal() and i < 100:
+        while not root.state.is_terminal() and i < 150:
             if root.state.player_S.name == ai.name:
                 
                 print(f"{root.state.player_S}")
@@ -198,11 +200,17 @@ if __name__ == "__main__":
         print(f"{root.state.player_NAP.name}  {root.state.player_NAP.life}")
         #print(root.state.winner.name)
         #print(ai.name)
-        #if root.state.winner.name == ai.name:
-            #wins += 1
+        
+        if root.state.winner == None:
+            not_finished += 1
             
-    #print(wins)
+        elif root.state.winner.name == ai.name:
+            wins += 1
+            
+   
     print(acts)
+    print(wins)
+    print(not_finished)
 
 
 """

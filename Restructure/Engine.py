@@ -557,9 +557,7 @@ class GameState:
     def get_result(self, ai_player):
         score = 0
         if self.player_S.name == ai_player.name:
-            #score += len(self.player_S.board) * 0.01
-            #score += (5 - self.player_NS.life) * 0.01
-            #score += (self.player_S.life - 5) * 0.01
+            
             if self.player_NS.life <= 0:
                 print(f"AI {self.player_S.name} wins: Opponent life={self.player_NS.life}")
                 self.winner = self.player_S
@@ -568,10 +566,12 @@ class GameState:
                 print(f"AI {self.player_S.name} loses: AI life={self.player_S.life}")
                 self.winner = self.player_NS
                 score -=1  # AI loses
+            else:
+                score += len(self.player_S.board) * 0.01
+                score += (5 - self.player_NS.life) * 0.01
+                score += (self.player_S.life - 5) * 0.01
         else:
-            #score += len(self.player_NS.board) * 0.01
-            #score += (5 - self.player_S.life) * 0.01
-            #score += (self.player_NS.life - 5) * 0.01
+            
             if self.player_S.life <= 0:
                 print(f"AI {self.player_NS.name} wins: Opponent life={self.player_S.life}")
                 self.winner = self.player_NS
@@ -580,6 +580,10 @@ class GameState:
                 print(f"AI {self.player_NS.name} loses: AI life={self.player_NS.life}")
                 self.winner = self.player_S
                 score -=1  # AI loses
+            else:
+                score += len(self.player_NS.board) * 0.01
+                score += (5 - self.player_S.life) * 0.01
+                score += (self.player_NS.life - 5) * 0.01
         print("Game continues.")
         
         return score  
