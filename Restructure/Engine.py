@@ -347,7 +347,7 @@ def play_land_legal_actions(player_s, actions):
         if isinstance(land, cs.LandCard) and player_s.played_land == False:
             actions.append({
                 "type": "land",
-                "id": land.id,
+                "id": (land.id + "play"),
                 "name": land.name,
                 "player": player_s,
                 "target": None,
@@ -358,10 +358,10 @@ def play_land_legal_actions(player_s, actions):
 def tap_land_legal_actions(player_s, actions):
         # Add tap land actions
     for land in player_s.land_board:
-        if not land.tapped:
+        if land.tapped == False:
             actions.append({
                 "type": "tap land",
-                "id": land.id,
+                "id": (land.id + "tap"),
                 "name": land.name,
                 "player": player_s,
                 "target": None,
@@ -556,8 +556,10 @@ class GameState:
         
     def get_result(self, ai_player):
         score = 0
-        score += len(ai_player.board) * 0.1
         if self.player_S.name == ai_player.name:
+            score += len(self.player_S.board) * 0.01
+            score += (5 - self.player_NS.life) * 0.01
+            score += (self.player_S.life - 5) * 0.01
             if self.player_NS.life <= 0:
                 print(f"AI {self.player_S.name} wins: Opponent life={self.player_NS.life}")
                 self.winner = self.player_S
@@ -567,6 +569,9 @@ class GameState:
                 self.winner = self.player_NS
                 score -=1  # AI loses
         else:
+            score += len(self.player_NS.board) * 0.01
+            score += (5 - self.player_S.life) * 0.01
+            score += (self.player_NS.life - 5) * 0.01
             if self.player_S.life <= 0:
                 print(f"AI {self.player_NS.name} wins: Opponent life={self.player_S.life}")
                 self.winner = self.player_NS
@@ -577,7 +582,7 @@ class GameState:
                 score -=1  # AI loses
         print("Game continues.")
         
-        return score  # Game is not over
+        return score  
     
     def is_terminal(self):
         if self.player_AP.life <= 0 or self.player_NAP.life <= 0:
