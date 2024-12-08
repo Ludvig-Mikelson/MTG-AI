@@ -77,11 +77,11 @@ class Node:
 
     def expand(self):
         """Expand a node by creating a new child for an untried action."""
-        
+        new_state = copy.deepcopy(self.state)
         tried_actions = [child.state.action_taken for child in self.children]
         tried_action_id = {action["id"] for action in tried_actions}
         untried_actions = [
-                action for action in self.state.legal_actions() if action["id"] not in tried_action_id
+                action for action in new_state.legal_actions() if action["id"] not in tried_action_id
             ]
         print("\n gg \n gg")
         print(f"Tried actions {tried_actions} LENGTH ({len(tried_actions)})")
@@ -89,10 +89,10 @@ class Node:
         print(f"All actions {self.state.legal_actions()} LENGTH ({len(self.state.legal_actions())})")
         
         if not untried_actions:
-            return None  # No actions to expand
+            return self  # No actions to expand
         action = random.choice(untried_actions)
 
-        new_state = copy.deepcopy(self.state)
+        
         new_state.execute_action(action)
         new_state.action_taken = action
         child_node = Node(new_state, parent=self)
@@ -112,7 +112,7 @@ def simulate(state, ai):
     stato = copy.deepcopy(state)
     
     i = 0
-    while not stato.is_terminal() and i < 200:
+    while not stato.is_terminal():
 
         legal_actions = stato.legal_actions()
         action = random.choice(legal_actions)
@@ -156,18 +156,18 @@ def mcts(root,ai, iterations=10):
         node.update(result)
             
             
-    return node.best_child(exploration_weight=0.0)
+    return root.best_child(exploration_weight=0.0)
 
 
 if __name__ == "__main__":
-    ai = player1
+    ai = player2
     wins = 0
     acts = []
     for _ in range(0,1,1):
         initial_state = state
         root = Node(initial_state)
         i=0
-        while not root.state.is_terminal() and i < 20:
+        while not root.state.is_terminal() and i < 100:
             if root.state.player_S.name == ai.name:
                 
                 print(f"{root.state.player_S}")
@@ -175,7 +175,7 @@ if __name__ == "__main__":
                 root = mcts(root,ai, iterations=5)
                 if root:
                     if root.state.action_taken:
-                        acts.append(f"Best action: {root.state.action_taken["type"]} value {root.value}")
+                        acts.append(f"Best action: {root.state.action_taken["type"]} value {root.value} phase {root.state.phase}, #{i}")
                         print(f"{root.state.action_taken}")
 
                         print("STOP")
