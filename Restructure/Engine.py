@@ -551,6 +551,50 @@ class GameState:
         self.action_taken = action_taken
         self.score = 0
         
+    def get_vector(self,ai):
+        state_vector = []
+        
+        
+        if self.player_AP.name == ai.name:
+            state_vector.append(1)
+        else:
+            state_vector.append(0)
+            
+        board_ai = len(self.player_S.board)
+        board_opp = len(self.player_NS.board)
+        
+        land_board_ai = len(self.player_S.land_board)
+        land_board_opp = len(self.player_NS.land_board)  
+              
+        hp_ai = self.player_S.life
+        hp_opp = self.player_NS.life
+
+        hand_ai = len(self.player_S.hand)
+        hand_opp = len(self.player_NS.hand)
+        
+            
+        state_vector.append(board_ai)
+        state_vector.append(board_opp)
+        state_vector.append(land_board_ai)
+        state_vector.append(land_board_opp)
+        state_vector.append(hp_ai)
+        state_vector.append(hp_opp)
+        state_vector.append(hand_ai)
+        state_vector.append(hand_opp)
+        
+        return state_vector
+        
+        
+            
+            
+            
+            
+            
+            
+            
+            
+            
+        
     def get_result(self, ai_player):
         score = 0
         if self.player_S.name == ai_player.name:

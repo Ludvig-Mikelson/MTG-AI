@@ -4,6 +4,7 @@ import Engine as en
 import Classes as cs
 import Card_Registry as cr
 import copy
+import json
 
 deck1 = en.build_deck(cr.creature_list, cr.instant_list)
 deck2 = en.build_deck(cr.creature_list, cr.instant_list)
@@ -11,9 +12,10 @@ start_hand1 = deck1[:7]
 start_hand2 = deck2[:8]
 deck1 = deck1[7:]
 deck2 = deck2[8:]
+
         
 player1 = copy.deepcopy(cs.Player("Bob", start_hand1, deck1, [], [], [], 0, 10))
-player2 = copy.deepcopy(cs.Player("Alice", start_hand2, deck2, [], [], [], 0, 10))
+player2 = copy.deepcopy(cs.Player("Alice", start_hand2, deck2, [], [], [], 0, 20))
 state = en.GameState(player_AP=player1, player_NAP=player2, stack=[])
 
 
@@ -163,36 +165,28 @@ def mcts(root,ai, iterations=10):
 if __name__ == "__main__":
     ai = player1
     wins = 0
-    losses = 0
     not_finished = 0
-    acts_tot = []
-    for _ in range(0,10,1):
-
-        acts = []
+    acts = []
+    training_data = []
+    
+    for _ in range(0,1000,1):
         initial_state = state
         root = Node(initial_state)
-        
-        if ai == player1:
-            training_data = [initial_state]
-        else:
-            training_data = []
-            
         i=0
+        game_data = []
         while not root.state.is_terminal(): #and i < 200:
             if root.state.player_S.name == ai.name:
                 
                 #print(f"{root.state.player_S}")
                 #print(f"{root.state.player_NS}")
                 root = mcts(root,ai, iterations=5)
-                
-                root_copy = copy.deepcopy(root)
-                training_data.append(root_copy.state)
-                
+                state_copy = copy.deepcopy(root.state)
+                game_data.append(state_copy)
                 if root:
                     if root.state.action_taken:
                         acts.append(f"Best action: {root.state.action_taken["type"]} value {root.value} phase {root.state.phase}, #{i}")
                         #print(f"{root.state.action_taken}")
-                        
+
                         #print("STOP")
                     else:
                         acts.append(f"Best action: {root.state.action_taken}")
@@ -207,50 +201,44 @@ if __name__ == "__main__":
                 root.state.execute_action(action)
             
             i+=1
-
-
-        
-
-
-
-
-
             
-        acts_tot.append(acts)
+            
+                
+            
 
         print(f"{root.state.player_AP.name}  {root.state.player_AP.life}")
         print(f"{root.state.player_NAP.name}  {root.state.player_NAP.life}")
-
+        print(_)
+        ##print(root.state.winner.name)
+        ##print(ai.name)
+        
         if root.state.winner == None:
             reward = 0
             not_finished += 1
             
         elif root.state.winner.name == ai.name:
-            wins += 1
             reward = 1
+            wins += 1
         else:
             reward = -1
             
+        for stato in game_data:
+            vector = stato.get_vector(ai)
+            training_data.append({'state_vector': vector, 'reward': reward})
             
-        while root_for_val is not None:
-            state = root_for_val.state
-            root_for_val = root_for_val.parent
             
-            
-        
-
-            
-    for act in acts_tot:
-        print(act, "\n")
-    print("AI wins:", wins)
-    print("AI losses:", losses)
-    print("not finished:", not_finished)
+    with open('training_data.txt', 'a') as f:
+        json.dump(training_data, f)      
+   
+    #print(acts)
+    print(wins)
+    print(not_finished)
 
 
-"""
+
 bob = 0
 alice = 0
-for _ in range(0,100,1):
+for _ in range(0,200,1):
 
     stato = copy.deepcopy(state)
     random.shuffle(stato.player_AP.deck)
@@ -272,6 +260,5 @@ for _ in range(0,100,1):
     elif stato.winner.name == "Alice":
         alice+=1
         
-#print(bob)
-#print(alice)
-"""
+print(bob)
+print(alice)
