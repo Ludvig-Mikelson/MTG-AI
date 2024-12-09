@@ -12,8 +12,8 @@ start_hand2 = deck2[:8]
 deck1 = deck1[7:]
 deck2 = deck2[8:]
         
-player1 = copy.deepcopy(cs.Player("Bob", start_hand1, deck1, [], [], [], 0, 5))
-player2 = copy.deepcopy(cs.Player("Alice", start_hand2, deck2, [], [], [], 0, 5))
+player1 = copy.deepcopy(cs.Player("Bob", start_hand1, deck1, [], [], [], 0, 10))
+player2 = copy.deepcopy(cs.Player("Alice", start_hand2, deck2, [], [], [], 0, 10))
 state = en.GameState(player_AP=player1, player_NAP=player2, stack=[])
 
 
@@ -31,17 +31,17 @@ class Node:
         tried_actions = [child.state.action_taken for child in self.children]
         all_actions = self.state.legal_actions()
         # Do this by id right now actions are added to tried, but not removed from untried. Do the same bellow
-        print(f"TEST {all_actions}")
+        #print(f"TEST {all_actions}")
 
         tried_action_id = {action["id"] for action in tried_actions}
         untried_actions = [
             action for action in all_actions if action["id"] not in tried_action_id
         ]
             
-        print(f"Tried action IDs {tried_action_id}")
-        print(f"Tried actions {tried_actions} LENGTH ({len(tried_actions)})")
-        print(f"Untried actions {untried_actions} LENGTH ({len(untried_actions)})")
-        print(f"All actions {all_actions} LENGTH ({len(all_actions)})")
+        #print(f"Tried action IDs {tried_action_id}")
+        #print(f"Tried actions {tried_actions} LENGTH ({len(tried_actions)})")
+        #print(f"Untried actions {untried_actions} LENGTH ({len(untried_actions)})")
+        #print(f"All actions {all_actions} LENGTH ({len(all_actions)})")
 
             
         return len(untried_actions) == 0
@@ -57,10 +57,10 @@ class Node:
             exploitation = child.value / (child.visits + 1e-6)
             exploration = exploration_weight * math.sqrt(math.log(self.visits + 1) / (child.visits + 1e-6))
             ucb_score = exploitation + exploration
-            print(f"Child Value: {child.value}")
-            print(f"Child Visits: {child.visits}")
-            print(f"UCB Score: {ucb_score}")
-            print(f"Action Taken: {child.state.action_taken}")
+            #print(f"Child Value: {child.value}")
+            #print(f"Child Visits: {child.visits}")
+            #print(f"UCB Score: {ucb_score}")
+            #print(f"Action Taken: {child.state.action_taken}")
             score_list = []
             if ucb_score >= best_score:
                 
@@ -83,10 +83,10 @@ class Node:
         untried_actions = [
                 action for action in new_state.legal_actions() if action["id"] not in tried_action_id
             ]
-        print("\n gg \n gg")
-        print(f"Tried actions {tried_actions} LENGTH ({len(tried_actions)})")
-        print(f"Untried actions {untried_actions} LENGTH ({len(untried_actions)})")
-        print(f"All actions {self.state.legal_actions()} LENGTH ({len(self.state.legal_actions())})")
+        #print("\n gg \n gg")
+        #print(f"Tried actions {tried_actions} LENGTH ({len(tried_actions)})")
+        #print(f"Untried actions {untried_actions} LENGTH ({len(untried_actions)})")
+        #print(f"All actions {self.state.legal_actions()} LENGTH ({len(self.state.legal_actions())})")
         
         if not untried_actions:
             return self  # No actions to expand
@@ -101,8 +101,8 @@ class Node:
 
         self.children.append(child_node)
         
-        print(child_node)
-        print(self.children)
+        #print(child_node)
+        #print(self.children)
         
         return child_node
 
@@ -113,14 +113,14 @@ def simulate(state, ai):
     if stato.action_taken["type"] == "pass":
         return 0
     i = 0
-    while not stato.is_terminal() and i < 30:
+    while not stato.is_terminal() and i < 25:
 
         legal_actions = stato.legal_actions()
         action = random.choice(legal_actions)
-        print(f"{legal_actions} HERE")
-        print(action)
+        #print(f"{legal_actions} HERE")
+        #print(action)
         stato.execute_action(action)
-        print(f"{stato.get_result(ai)} this")
+        #print(f"{stato.get_result(ai)} this")
         i+=1
     return stato.get_result(ai)
 
@@ -132,27 +132,27 @@ def mcts(root,ai, iterations=10):
         
         random.shuffle(node.state.player_S.deck)
         random.shuffle(node.state.player_NS.deck)
-        print(node)
+        #print(node)
         # Selection
         while not node.state.is_terminal() and node.is_fully_expanded():
             node = node.best_child()
-            print(node)
+            #print(node)
         # Expansion
         if not node.state.is_terminal():
 
             node = node.expand()
-            print(node)
+            #print(node)
         # Simulation
         result = simulate(node.state, ai)
-        print(result)
+        #print(result)
         # Backpropagation
         while node.parent is not None:
-            print(f"Player AP {node.state.player_AP.name}")
-            print(f"Player NAP {node.state.player_NAP.name}")
-            print(f"Action Taken {node.state.action_taken}")
+            #print(f"Player AP {node.state.player_AP.name}")
+            #print(f"Player NAP {node.state.player_NAP.name}")
+            #print(f"Action Taken {node.state.action_taken}")
             node.update(result)
             node = node.parent
-            print("g")
+            #print("g")
         
         node.update(result)
             
@@ -165,26 +165,26 @@ if __name__ == "__main__":
     wins = 0
     not_finished = 0
     acts = []
-    for _ in range(0,5,1):
+    for _ in range(0,10,1):
         initial_state = state
         root = Node(initial_state)
         i=0
-        while not root.state.is_terminal() and i < 150:
+        while not root.state.is_terminal(): #and i < 200:
             if root.state.player_S.name == ai.name:
                 
-                print(f"{root.state.player_S}")
-                print(f"{root.state.player_NS}")
-                root = mcts(root,ai, iterations=6)
+                #print(f"{root.state.player_S}")
+                #print(f"{root.state.player_NS}")
+                root = mcts(root,ai, iterations=5)
                 if root:
                     if root.state.action_taken:
                         acts.append(f"Best action: {root.state.action_taken["type"]} value {root.value} phase {root.state.phase}, #{i}")
-                        print(f"{root.state.action_taken}")
+                        #print(f"{root.state.action_taken}")
 
-                        print("STOP")
+                        #print("STOP")
                     else:
                         acts.append(f"Best action: {root.state.action_taken}")
                         
-                    print(root.value)
+                    #print(root.value)
                 
             else:
  
@@ -198,8 +198,8 @@ if __name__ == "__main__":
 
         print(f"{root.state.player_AP.name}  {root.state.player_AP.life}")
         print(f"{root.state.player_NAP.name}  {root.state.player_NAP.life}")
-        #print(root.state.winner.name)
-        #print(ai.name)
+        ##print(root.state.winner.name)
+        ##print(ai.name)
         
         if root.state.winner == None:
             not_finished += 1
@@ -238,6 +238,6 @@ for _ in range(0,100,1):
     elif stato.winner.name == "Alice":
         alice+=1
         
-print(bob)
-print(alice)
+#print(bob)
+#print(alice)
 """

@@ -568,9 +568,10 @@ class GameState:
                 self.winner = self.player_NS
                 score -=1  # AI loses
             else:
-                score += len(self.player_S.board) * 0.01
-                score += (5 - self.player_NS.life) * 0.03
-                score += (self.player_S.life - 5) * 0.02
+                score += len(self.player_S.board) * 0.03
+                score -= len(self.player_NS.board) * 0.03
+                score += (20 - self.player_NS.life) * 0.06
+                score += (self.player_S.life - 20) * 0.05
         else:
             
             if self.player_S.life <= 0:
@@ -582,9 +583,10 @@ class GameState:
                 self.winner = self.player_S
                 score -=1  # AI loses
             else:
-                score += len(self.player_NS.board) * 0.01
-                score += (5 - self.player_S.life) * 0.03
-                score += (self.player_NS.life - 5) * 0.02
+                score += len(self.player_NS.board) * 0.03
+                score -= len(self.player_NS.board) * 0.03
+                score += (20 - self.player_S.life) * 0.06
+                score += (self.player_NS.life - 20) * 0.05
         #print("Game continues.")
         
         return score  
