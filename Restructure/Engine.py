@@ -203,7 +203,7 @@ def resolve_combat(GameState):
                 mouse.trample_eot == True
             elif buff == "double_strike":
                 pass       # for now
-            print(f"Manifold mouse effect gave {buff} to {mouse.name} until EOT.")
+            # print(f"Manifold mouse effect gave {buff} to {mouse.name} until EOT.")
     
     for attacker in creatures:
         if attacker.attacking:
@@ -396,8 +396,8 @@ def block_legal_actions(player_AP, player_NAP, actions):
                             "action": creature_blk.block,
                             "cost": 0 
                             })
-                    else:
-                        print(f"Couldn't block, attacker {creature_atk.name} flying: {creature_atk.flying}, blocker {creature_blk.name} flying: {creature_blk.flying}")
+                    # else:
+                    #     print(f"Couldn't block, attacker {creature_atk.name} flying: {creature_atk.flying}, blocker {creature_blk.name} flying: {creature_blk.flying}")
 
     
 
