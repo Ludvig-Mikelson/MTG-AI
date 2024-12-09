@@ -163,10 +163,12 @@ def mcts(root,ai, iterations=10):
 if __name__ == "__main__":
     ai = player1
     wins = 0
+    losses = 0
     not_finished = 0
-    acts = []
+    acts_tot = []
     for _ in range(0,10,1):
 
+        acts = []
         initial_state = state
         root = Node(initial_state)
         
@@ -213,6 +215,8 @@ if __name__ == "__main__":
 
 
 
+            
+        acts_tot.append(acts)
 
         print(f"{root.state.player_AP.name}  {root.state.player_AP.life}")
         print(f"{root.state.player_NAP.name}  {root.state.player_NAP.life}")
@@ -233,11 +237,14 @@ if __name__ == "__main__":
             root_for_val = root_for_val.parent
             
             
+        
+
             
-   
-    print(acts)
-    print(wins)
-    print(not_finished)
+    for act in acts_tot:
+        print(act, "\n")
+    print("AI wins:", wins)
+    print("AI losses:", losses)
+    print("not finished:", not_finished)
 
 
 """
