@@ -554,6 +554,7 @@ class GameState:
         self.reset_prio = False
         self.winner = None
         self.action_taken = action_taken
+        self.score = 0
         
     def get_result(self, ai_player):
         score = 0

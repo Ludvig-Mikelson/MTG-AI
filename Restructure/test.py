@@ -161,13 +161,20 @@ def mcts(root,ai, iterations=10):
 
 
 if __name__ == "__main__":
-    ai = player2
+    ai = player1
     wins = 0
     not_finished = 0
     acts = []
     for _ in range(0,10,1):
+
         initial_state = state
         root = Node(initial_state)
+        
+        if ai == player1:
+            training_data = [initial_state]
+        else:
+            training_data = []
+            
         i=0
         while not root.state.is_terminal(): #and i < 200:
             if root.state.player_S.name == ai.name:
@@ -175,11 +182,15 @@ if __name__ == "__main__":
                 #print(f"{root.state.player_S}")
                 #print(f"{root.state.player_NS}")
                 root = mcts(root,ai, iterations=5)
+                
+                root_copy = copy.deepcopy(root)
+                training_data.append(root_copy.state)
+                
                 if root:
                     if root.state.action_taken:
                         acts.append(f"Best action: {root.state.action_taken["type"]} value {root.value} phase {root.state.phase}, #{i}")
                         #print(f"{root.state.action_taken}")
-
+                        
                         #print("STOP")
                     else:
                         acts.append(f"Best action: {root.state.action_taken}")
@@ -194,18 +205,34 @@ if __name__ == "__main__":
                 root.state.execute_action(action)
             
             i+=1
-            
+
+
+        
+
+
+
+
+
 
         print(f"{root.state.player_AP.name}  {root.state.player_AP.life}")
         print(f"{root.state.player_NAP.name}  {root.state.player_NAP.life}")
-        ##print(root.state.winner.name)
-        ##print(ai.name)
-        
+
         if root.state.winner == None:
+            reward = 0
             not_finished += 1
             
         elif root.state.winner.name == ai.name:
             wins += 1
+            reward = 1
+        else:
+            reward = -1
+            
+            
+        while root_for_val is not None:
+            state = root_for_val.state
+            root_for_val = root_for_val.parent
+            
+            
             
    
     print(acts)
