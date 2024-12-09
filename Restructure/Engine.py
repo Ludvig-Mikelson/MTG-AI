@@ -202,18 +202,8 @@ def resolve_combat(GameState):
             if buff == "trample":
                 mouse.trample_eot == True
             elif buff == "double_strike":
-                pass                            # for now
-            #print(f"Manifold mouse effect gave {buff} to {mouse.name} until EOT.")
-
-######
-# Šādi strādā Flying, nezinu kur tas jāimplementē šobrīd īsti, atstāšu šeit:
-######
-
-# if not (to_block.flying==True and blocker.flying==False):   # only 1 out of 4 cases when cannot block
-#     blocker.blocked_creature_id = to_block.id
-# else:
-#     #print(f"Couldn't block, attacker {to_block.name} flying: {to_block.flying}, blocker {blocker.name} flying: {blocker.flying}")
-
+                pass       # for now
+            print(f"Manifold mouse effect gave {buff} to {mouse.name} until EOT.")
     
     for attacker in creatures:
         if attacker.attacking:
@@ -395,15 +385,20 @@ def block_legal_actions(player_AP, player_NAP, actions):
         if creature_blk.tapped == False and creature_blk.blocking == False:
             for creature_atk in creatures_ap:
                 if creature_atk.attacking == True:
-                    actions.append({
-                        "type": "block",
-                        "id": creature_blk.id,  
-                        "name": creature_blk.name,
-                        "player": player_NAP,
-                        "target": creature_atk,
-                        "action": creature_blk.block,
-                        "cost": 0 
-                        })
+                    # Flying goes here:
+                    if not (creature_atk.flying==True and creature_blk.flying==False):   # only 1 out of 4 cases when cannot block
+                        actions.append({
+                            "type": "block",
+                            "id": creature_blk.id,  
+                            "name": creature_blk.name,
+                            "player": player_NAP,
+                            "target": creature_atk,
+                            "action": creature_blk.block,
+                            "cost": 0 
+                            })
+                    else:
+                        print(f"Couldn't block, attacker {creature_atk.name} flying: {creature_atk.flying}, blocker {creature_blk.name} flying: {creature_blk.flying}")
+
     
 
 def non_action(player_s):
