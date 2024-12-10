@@ -1,200 +1,196 @@
-# tests
+#%%
+import Engine as en
+import Classes as cs
 import random
-import Encode
+import math
 
-def play_creature_legal_actions(player_s, actions):
-        # Add creature actions
-    for creature in player_s.hand:
-        if isinstance(creature, CreatureCard) and creature.mana_cost <= player_s.mana_pool:
-            actions.append({
-                "type": "creature",
-                "id": creature.id,
-                "name": creature.name,
-                "player": player_s,
-                "target": None,
-                "action": "play_creature"
-            })
+# Initialize players and game state
+player1 = en.player1
+player2 = en.player2
+state = en.GameState(player_AP=player1, player_NAP=player2, stack=[])
 
 
-def play_instant_legal_actions(player_s, actions):
-        # Add instant actions
-    for instant in player_s.hand:
-        if isinstance(instant, InstantCard) and instant.mana_cost <= player_s.mana_pool:
-            actions.append({
-                "type": "instant",
-                "id": instant.id,
-                "name": instant.name,
-                "player": player_s,
-                "target": None,
-                "action": "choose_target"
-            })
+def get_action_key(action):
+    """
+    Convert an action to a consistent, hashable key.
+    """
+    if isinstance(action, dict):
+        return (
+            action.get('type'),
+            id(action.get('id')),  # Use `id()` to get a unique hashable identifier
+            action.get('name'),
+            id(action.get('player')),  # Use `id()` to hash the player object
+        )
+    return action
 
-def play_land_legal_actions(player_s, actions):
+
+class MCTSNode:
+    def __init__(self, state, parent=None):
+        self.state = state
+        self.parent = parent
+        self.children = {}  # Maps hashable actions to child nodes
+        self.visit_count = 0
+        self.total_value = 0
+
+    def is_fully_expanded(self):
+        """
+        Returns True if all legal actions for the current state have been expanded.
+        """
+        legal_actions = self.state.legal_actions()
+        print(f"Legal actions: {legal_actions}")
+        legal_action_keys = {get_action_key(action) for action in legal_actions}
+        return legal_action_keys.issubset(set(self.children.keys()))
     
-    for land in player_s.hand:
-        if isinstance(land, LandCard) and player_s.played_land == False:
-            actions.append({
-                "type": "land",
-                "id": land.id,
-                "name": land.name,
-                "player": player_s,
-                "target": None,
-                "action": "play_land"
-            })
-            
-def tap_land_legal_actions(player_s, actions):
-        # Add tap land actions
-    for land in player_s.land_board:
-        if not land.tapped:
-            actions.append({
-                "type": "land",
-                "id": land.id,
-                "name": land.name,
-                "player": player_s,
-                "target": None,
-                "action": "tap_land"
-            })
-            
-def target_instant_legal_actions(player_s, player_ns, instant_to_target, actions):
-    
-    if instant_to_target:
-        for target in [player_ns, player_s] + player_ns.board + player_s.board:
-            actions.append({
-                "type": "instant",
-                "id": instant_to_target["id"],  
-                "name": instant_to_target["name"],
-                "player": player_s,
-                "target": target,
-                "action": "play_instant" 
-                })
-    return actions
+    def best_child(self, c_param=1.4):
+        """Selects the child with the highest UCB value."""
+        if not self.children:
+            raise ValueError("No children to select from.")
+        return max(
+            self.children.items(),
+            key=lambda item: (
+                item[1].total_value / item[1].visit_count if item[1].visit_count > 0 else float('inf')
+                + c_param * (math.sqrt(math.log(self.visit_count) / (item[1].visit_count or 1)))
+            ),
+        )[1]
 
-def attack_legal_actions(player_AP,actions):
-    
-    creatures = player_AP.board
-    for creature in creatures:
-        if creature.tapped == False:
-            actions.append({
-                "type": "attack",
-                "id": creature["id"],  
-                "name": creature["name"],
-                "player": player_AP,
-                "target": "self",
-                "action": "declare_attack" 
-                })
-    
-def block_legal_actions(player_AP, player_NAP, actions):
-    
-    creatures_ap = player_AP.board
-    creatures_nap = player_NAP.board
-    
-    for creature_blk in creatures_nap:
-        if creature_blk.tapped == False and creature_blk.blocking == False:
-            for creature_atk in creatures_ap:
-                if creature_atk.attacking == True:
-                    actions.append({
-                        "type": "block",
-                        "id": creature_blk["id"],  
-                        "name": creature_blk["name"],
-                        "player": player_NAP,
-                        "target": creature_atk["id"],
-                        "action": "declare_block" 
-                        })
-    
-
-def legal_actions(GameState, instant_to_target=None):
-    actions = []
-    player_ns = GameState.player_NS
-    player_s = GameState.player_S
-    phase = GameState.phase
-    player_ap = GameState.player_AP
-    player_nap = GameState.player_NAP
-
-    # target instant actions
-    if instant_to_target:
-        target_instant_legal_actions(player_s, player_ns, instant_to_target, actions)
-        return actions
-    
-    if phase == "main phase 1" or "main phase 2":
-        # tap land actions
-        tap_land_legal_actions(player_s, actions)
-
-        # play land actions
-        play_land_legal_actions(player_s, actions)
-        
-        # play creature actions
-        play_creature_legal_actions(player_s, actions)
-        
-        # play instant actions
-        play_instant_legal_actions(player_s, actions)
-        
-    elif phase == "declare_attack_phase":
-        # tap land actions
-        tap_land_legal_actions(player_s, actions)
-        
-        # play instant actions
-        play_instant_legal_actions(player_s, actions)
-        
-        # declare attack actions
-        attack_legal_actions(player_ap, actions)
-    
-    elif phase == "declare_block_phase":
-        # tap land actions
-        tap_land_legal_actions(player_s, actions)
-        
-        # play instant actions
-        play_instant_legal_actions(player_s, actions)
-        
-        # declare block acions
-        block_legal_actions(player_ap, player_nap, actions)
-        
-         
-    elif phase == "resolve battle phase":
-        # tap land actions
-        tap_land_legal_actions(player_s, actions)
-        
-        # play instant actions
-        play_instant_legal_actions(player_s, actions)
-        
-
-    return actions
-            
-            
-            
-        # For cards that require choice, create a half action append it to half action list and make so that legal action function
-        # locks all actions that are not half action if there is anything inside the half action set.      
-        
+    def get_child_node_for_action(self, action):
+        """
+        Retrieve the child node corresponding to a specific action.
+        """
+        action_key = get_action_key(action)
+        return self.children.get(action_key, None)
 
 
-# Choose action, opponent has abillity to choose an action, you have an opportunity to choose an action, loop like that untill both
-# players choose to not make an action in a row. then resolve the actions in the order they were made. 
+def mcts_search(root, simulations=100, ai_player=None):
+    """
+    Perform Monte Carlo Tree Search starting from the root node.
+    """
+    for _ in range(simulations):
+        node = root
 
-def choose_action(actions):
-    if actions:
-        action = random.choice(actions)
-        
-        if action.type == "Instant":
-            if action.target == None:
-                action = legal_actions(GameState, instant_to_target=action)
-        
-    GameState.stack.append(action)
+        # Selection: Traverse down the tree
+        while node.is_fully_expanded() and node.children:
+            try:
+                node = node.best_child()
+            except ValueError:
+                print("No children found during selection.")
+                break
 
-def execute_stack(GameState):
-    stack = GameState.stack.reverse()
-    
-    for action in stack:
-        if action["target"] is None:
-            action["action"](None)
+        # Expansion: Add a new node if possible
+        if not node.is_fully_expanded():
+            actions = node.state.legal_actions()
+            if not actions:
+                actions = [False]  # Default action if no legal actions exist
+
+            for action in actions:
+                action_key = get_action_key(action)
+                if action_key not in node.children:
+                    next_state = node.state.copy()
+                    print(action)
+                    next_state.execute_action(action)
+                    child_node = MCTSNode(state=next_state, parent=node)
+                    node.children[action_key] = child_node
+                    print(f"Expanded new action: {action_key}")
+                    break
+
+        # Simulation: Perform a rollout to determine the result
+        reward = simulate_rollout(node.state.copy(), ai_player)
+
+        # Backpropagation: Update the node values up to the root
+        while node:
+            print(node)
+            print(f"Backpropagating reward: {reward}, Node visits: {node.visit_count}, Total value: {node.total_value}")
+            node.visit_count += 1
+            node.total_value += reward
+            print(f"Updated Node: Visits={node.visit_count}, Total Value={node.total_value}")
+            node = node.parent
+
+    # Evaluate and return the best action
+    print("Actions evaluated at root:")
+    for action, child in root.children.items():
+        print(f"Root action: {action}, Visits: {child.visit_count}, Total Value: {child.total_value}")
+
+    # Consider only valid actions for the best action
+    valid_actions = [(action, child) for action, child in root.children.items() if action is not False]
+    if valid_actions:
+        best_action = max(valid_actions, key=lambda item: item[1].visit_count)[0]
+    else:
+        print("No valid actions, defaulting to `False`.")
+        best_action = False  # Default to `False` if no other actions are valid
+    return best_action
+
+
+def simulate_rollout(state, ai_player, max_depth=100):
+    """
+    Simulate a game rollout from the given state.
+    """
+    depth = 0
+    while not state.is_terminal() and depth < max_depth:
+        print("Gotta be here")
+        actions = state.legal_actions()
+        if actions:
+            action = random.choice(actions)
+            print(f"Simulating action: {action}")
+            state.execute_action(action)
         else:
-            action["action"](action["target"])
-        
-    
-    
-
-# Once the actions resolve, move the loop towards the next phase or sub phase, and set the playerAP to have the priority
-# Switch AP/NAP at end phase
-# Loop like this untill one of the players life goes to 0 or bellow or a card is drawn when deck is empty.
+            print("No legal actions, passing priority.")
+            state.execute_action(False)  # Pass turn
+        depth += 1
+    reward = state.get_result(ai_player)
+    print(f"Rollout reached terminal state. Reward: {reward}, Depth: {depth}")
+    return reward
 
 
-        
-            
+def play_game_with_mcts(ai_player, max_simulations=100):
+    """
+    Main game loop to play a game using Monte Carlo Tree Search for the AI player.
+    """
+    game_state = en.GameState(player_AP=player1, player_NAP=player2, stack=[])
+    root = MCTSNode(game_state, parent=None)
+
+    while not game_state.is_terminal():
+        print(f"\nCurrent Phase: {game_state.phase}")
+        print(f"{game_state.player_AP.name} Life: {game_state.player_AP.life}, {game_state.player_NAP.name} Life: {game_state.player_NAP.life}")
+        current_player = game_state.player_S
+        print(f"Current Player: {'AI' if current_player == ai_player else 'Opponent'}")
+        legal_actions = game_state.legal_actions()
+
+        if game_state.phase in ["begin phase", "end phase", "first phase"]:
+            en.change_phase(game_state)
+
+        if not legal_actions or legal_actions == [False]:
+            print("No valid actions. Passing priority.")
+            game_state.execute_action(False)
+            continue
+
+        if current_player == ai_player:
+            print("AI is thinking...")
+            try:
+                best_action = mcts_search(root, max_simulations, ai_player)
+                print(f"AI chooses action: {best_action}")
+                game_state.execute_action(best_action)
+            except Exception as e:
+                print(f"Error during AI decision-making: {e}")
+                game_state.execute_action(False)  # Fallback to passing priority
+        else:
+            print("Opponent is thinking...")
+            opponent_action = random.choice(legal_actions)
+            print(f"Opponent chooses action: {opponent_action}")
+            game_state.execute_action(opponent_action)
+
+        if game_state.is_terminal():
+            break
+
+        root = root.get_child_node_for_action(game_state) or MCTSNode(game_state, parent=None)
+
+    game_state.determine_winner()
+    print("\nGame Over!")
+    if game_state.winner == ai_player:
+        print(f"AI {game_state.winner.name} wins!")
+    elif game_state.winner is None:
+        print("It's a draw!")
+    else:
+        print(f"Opponent {game_state.winner.name} wins!")
+
+
+play_game_with_mcts(player1)
