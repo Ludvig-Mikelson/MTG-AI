@@ -62,7 +62,7 @@ class Node:
             #print(f"UCB Score: {ucb_score}")
             #print(f"Action Taken: {child.state.action_taken}")
             score_list = []
-            if ucb_score >= best_score:
+            if ucb_score > best_score:
                 
                 best_score = ucb_score
                 best_child = child
@@ -106,27 +106,49 @@ class Node:
         
         return child_node
 
+# Modify the get_result method to accept dynamic parameters for optimization
+def custom_get_result(state, ai_player, coeff_board_self, coeff_board_opponent, coeff_life_opponent, coeff_life_self):
+    score = 0
+    if state.player_S.name == ai_player.name:
+        if state.player_NS.life <= 0:
+            score += 1
+        elif state.player_S.life <= 0:
+            score -= 1
+        else:
+            score += len(state.player_S.board) * coeff_board_self
+            score -= len(state.player_NS.board) * coeff_board_opponent
+            score += (20 - state.player_NS.life) * coeff_life_opponent
+            score += (state.player_S.life - 20) * coeff_life_self
+    else:
+        if state.player_S.life <= 0:
+            score += 1
+        elif state.player_NS.life <= 0:
+            score -= 1
+        else:
+            score += len(state.player_NS.board) * coeff_board_self
+            score -= len(state.player_S.board) * coeff_board_opponent
+            score += (20 - state.player_S.life) * coeff_life_opponent
+            score += (state.player_NS.life - 20) * coeff_life_self
+    return score
 
-def simulate(state, ai):
-    """Simulate a random game from the given state."""
+# Simulate function for random game play (modified to use custom_get_result with dynamic coefficients)
+def simulate(state, ai, max_depth, coeff_board_self, coeff_board_opponent, coeff_life_opponent, coeff_life_self):
     stato = copy.deepcopy(state)
-    if stato.action_taken["type"] == "pass":
+    if stato.action_taken and stato.action_taken["type"] == "pass":
         return 0
     i = 0
-    while not stato.is_terminal() and i < 25:
+    while not stato.is_terminal() and i < max_depth:
 
         legal_actions = stato.legal_actions()
         action = random.choice(legal_actions)
         #print(f"{legal_actions} HERE")
         #print(action)
         stato.execute_action(action)
-        #print(f"{stato.get_result(ai)} this")
-        i+=1
-    return stato.get_result(ai)
+        i += 1
+    return custom_get_result(stato, ai, coeff_board_self, coeff_board_opponent, coeff_life_opponent, coeff_life_self)
 
-def mcts(root,ai, iterations=10):
-    """Perform MCTS to find the best action."""
-    
+# MCTS function (modified to pass optimized coefficients)
+def mcts(root, ai, iterations=10, max_depth=25, coeff_board_self=0.03, coeff_board_opponent=0.03, coeff_life_opponent=0.06, coeff_life_self=0.05):
     for _ in range(iterations):
         node = root
         
@@ -143,7 +165,8 @@ def mcts(root,ai, iterations=10):
             node = node.expand()
             #print(node)
         # Simulation
-        result = simulate(node.state, ai)
+        result = simulate(node.state, ai, max_depth=max_depth, coeff_board_self=coeff_board_self, coeff_board_opponent=coeff_board_opponent,
+                          coeff_life_opponent=coeff_life_opponent, coeff_life_self=coeff_life_self)
         #print(result)
         # Backpropagation
         while node.parent is not None:
@@ -160,49 +183,54 @@ def mcts(root,ai, iterations=10):
     return root.best_child(exploration_weight=0.0)
 
 
-if __name__ == "__main__":
+######
+# Parametru optimizācija:
+
+import optuna
+
+
+def objective(trial):
+    # Suggest values for parameters
+    coeff_board_self = trial.suggest_float("coeff_board_self", 0.01, 0.1)
+    coeff_board_opponent = trial.suggest_float("coeff_board_opponent", 0.01, 0.1)
+    coeff_life_opponent = trial.suggest_float("coeff_life_opponent", 0.01, 0.1)
+    coeff_life_self = trial.suggest_float("coeff_life_self", 0.01, 0.1)
+
+    max_depth = 15
+    num_iterations = 20
+    simulations = 20  # Number of games to simulate for evaluation
+
     ai = player2
     wins = 0
     losses = 0
     not_finished = 0
-    acts_tot = []
-    for _ in range(0,10,1):
-        acts = []
+    for i in range(simulations):
         initial_state = state
         root = Node(initial_state)
-        i=0
-        while not root.state.is_terminal(): #and i < 200:
+
+        while not root.state.is_terminal():
             if root.state.player_S.name == ai.name:
                 
                 #print(f"{root.state.player_S}")
                 #print(f"{root.state.player_NS}")
-                root = mcts(root,ai, iterations=5)
-                if root:
-                    if root.state.action_taken:
-                        acts.append(f"Best action: {root.state.action_taken["type"]} value {root.value} phase {root.state.phase}, #{i}")
-                        #print(f"{root.state.action_taken}")
 
-                        #print("STOP")
-                    else:
-                        acts.append(f"Best action: {root.state.action_taken}")
-                        
-                    #print(root.value)
-                
+                root = mcts(root, ai, iterations=num_iterations, max_depth=max_depth, coeff_board_self=0.02, 
+                            coeff_board_opponent=0.02, coeff_life_opponent=0.5, coeff_life_self=0.065)
+
             else:
- 
                 actions = root.state.legal_actions()
                 action = random.choice(actions)
                 #acts.append(f"Best action: {action} NON AI")
                 root.state.execute_action(action)
-            
-            i+=1
-            
-        acts_tot.append(acts)
+                        
 
-        print(f"{root.state.player_AP.name}  {root.state.player_AP.life}")
-        print(f"{root.state.player_NAP.name}  {root.state.player_NAP.life}")
+        # print(f"{root.state.player_AP.name}  {root.state.player_AP.life}")
+        # print(f"{root.state.player_NAP.name}  {root.state.player_NAP.life}")
         ##print(root.state.winner.name)
         ##print(ai.name)
+
+        if i%5 ==0:
+            print(i)
         
         if root.state.winner == None:
             not_finished += 1
@@ -213,11 +241,31 @@ if __name__ == "__main__":
         elif root.state.winner.name == player1.name:
             losses += 1
             
-    for act in acts_tot:
-        print(act, "\n")
     print("AI wins:", wins)
     print("AI losses:", losses)
     print("not finished:", not_finished)
+
+
+    # Return win rate as the objective to maximize
+    return wins / simulations
+
+
+
+# Run Optuna study
+if __name__ == "__main__":
+    study = optuna.create_study(
+        direction="maximize",
+        storage="sqlite:///optuna_study.db",  # Save results in SQLite
+        load_if_exists=True
+    )
+    study.optimize(objective, n_trials=100)
+
+    # Display best parameters and results
+    print("Best parameters:", study.best_params)
+    print(f"Best win rate: {study.best_value*100:.1f}%")
+
+
+
 
 
 """
