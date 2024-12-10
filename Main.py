@@ -1,196 +1,295 @@
-#%%
+import math
+import random
 import Engine as en
 import Classes as cs
-import random
-import math
+import Card_Registry as cr
+import copy
+import json
+import tensorflow as tf
+import numpy as np
+import joblib
 
-# Initialize players and game state
-player1 = en.player1
-player2 = en.player2
+# Load the TFLite model
+interpreter = tf.lite.Interpreter(model_path="trained_model.tflite")
+interpreter.allocate_tensors()
+
+# Get input and output tensor details
+input_details = interpreter.get_input_details()
+output_details = interpreter.get_output_details()
+
+# Load the scaler for input normalization
+scaler = joblib.load('scaler.pkl')
+
+# Create Initial GameState
+deck1 = en.build_deck(cr.creature_list, cr.instant_list)
+deck2 = en.build_deck(cr.creature_list, cr.instant_list)
+player1 = copy.deepcopy(cs.Player("Bob", [], deck1, [], [], [], 0, 10))
+player2 = copy.deepcopy(cs.Player("Alice", [], deck2, [], [], [], 0, 10))
 state = en.GameState(player_AP=player1, player_NAP=player2, stack=[])
 
+training_data = []
 
-def get_action_key(action):
-    """
-    Convert an action to a consistent, hashable key.
-    """
-    if isinstance(action, dict):
-        return (
-            action.get('type'),
-            id(action.get('id')),  # Use `id()` to get a unique hashable identifier
-            action.get('name'),
-            id(action.get('player')),  # Use `id()` to hash the player object
-        )
-    return action
+def predict_with_tflite(input_vector):
+    # Normalize the input vector
+    input_vector_scaled = scaler.transform(input_vector.reshape(1, -1))
+
+    # Set the input tensor
+    interpreter.set_tensor(input_details[0]['index'], input_vector_scaled.astype(np.float32))
+
+    # Run inference
+    interpreter.invoke()
+
+    # Get the prediction
+    prediction = interpreter.get_tensor(output_details[0]['index'])
+    return prediction[0][0]  # Return the scalar value
 
 
-class MCTSNode:
+
+class Node:
     def __init__(self, state, parent=None):
         self.state = state
         self.parent = parent
-        self.children = {}  # Maps hashable actions to child nodes
-        self.visit_count = 0
-        self.total_value = 0
-
+        self.children = []
+        self.visits = 0
+        self.value = 0
+        
+    # Check if all actions have been tried      
     def is_fully_expanded(self):
-        """
-        Returns True if all legal actions for the current state have been expanded.
-        """
-        legal_actions = self.state.legal_actions()
-        print(f"Legal actions: {legal_actions}")
-        legal_action_keys = {get_action_key(action) for action in legal_actions}
-        return legal_action_keys.issubset(set(self.children.keys()))
+        """Check if all possible actions have been tried."""
+        tried_actions = [child.state.action_taken for child in self.children]
+        all_actions = self.state.legal_actions()
+
+        tried_action_id = {action["id"] for action in tried_actions}
+        untried_actions = [
+            action for action in all_actions if action["id"] not in tried_action_id
+        ]
+            
+        return len(untried_actions) == 0
+    # Check which is the best child
+    def best_child(self, exploration_weight=0.5):
+        """Choose the best child node based on UCB."""
+        best_score = -float('inf')
+        best_child = None
+
+        for child in self.children:
+            input_vector = np.array(child.state.get_vector(ai))
+            predicted_val = predict_with_tflite(input_vector)
+            
+            # MCTS vai NN
+            MCTS_val = child.value
+            val = predicted_val
+
+            # Calculate UCB score
+            exploitation = val / (child.visits + 1e-6)
+            exploration = exploration_weight * math.sqrt(math.log(self.visits + 1) / (child.visits + 1e-6))
+            ucb_score = exploitation + exploration
+
+            if ucb_score >= best_score:
+                best_score = ucb_score
+                best_child = child
+
+        return best_child
+
+        
+    def update(self, result):
+        """Update the node with the result of a simulation."""
+        self.visits += 1
+        self.value += result
+
+    # If any actions untried Expand
+    def expand(self):
+        """Expand a node by creating a new child for an untried action."""
+        new_state = copy.deepcopy(self.state)
+        tried_actions = [child.state.action_taken for child in self.children]
+        tried_action_id = {action["id"] for action in tried_actions}
+        untried_actions = [
+                action for action in new_state.legal_actions() if action["id"] not in tried_action_id
+            ]
+
+        if not untried_actions:
+            return self  
+        action = random.choice(untried_actions)
+
+        new_state.execute_action(action)
+        new_state.action_taken = action
+        child_node = Node(new_state, parent=self)
+        
+        self.children.append(child_node)
+        
+        return child_node
+
+# Simulate Game either Random for MCTS or NN
+def simulate(state, ai):
+    """Simulate a random game from the given state."""
+    stato = copy.deepcopy(state)
     
-    def best_child(self, c_param=1.4):
-        """Selects the child with the highest UCB value."""
-        if not self.children:
-            raise ValueError("No children to select from.")
-        return max(
-            self.children.items(),
-            key=lambda item: (
-                item[1].total_value / item[1].visit_count if item[1].visit_count > 0 else float('inf')
-                + c_param * (math.sqrt(math.log(self.visit_count) / (item[1].visit_count or 1)))
-            ),
-        )[1]
+    
+    #if stato.action_taken["type"] == "pass":
+        #return 0
+    
+    input_vector = np.array(stato.get_vector(ai))
+    predicted_val = predict_with_tflite(input_vector)
+    predicted_val = float(predicted_val) 
+    
+    #i = 0
+    """ while not stato.is_terminal() and i < 25:
 
-    def get_child_node_for_action(self, action):
-        """
-        Retrieve the child node corresponding to a specific action.
-        """
-        action_key = get_action_key(action)
-        return self.children.get(action_key, None)
+        legal_actions = stato.legal_actions()
+        action = random.choice(legal_actions)
+        #print(f"{legal_actions} HERE")
+        #print(action)
+        stato.execute_action(action)
+        #print(f"{stato.get_result(ai)} this")
+        i+=1 """
+    return predicted_val #stato.get_result(ai)
 
-
-def mcts_search(root, simulations=100, ai_player=None):
-    """
-    Perform Monte Carlo Tree Search starting from the root node.
-    """
-    for _ in range(simulations):
+# Find the Best action
+def mcts(root,ai, iterations=10):
+ 
+    for _ in range(iterations):
         node = root
+        
+        random.shuffle(node.state.player_S.deck)
+        random.shuffle(node.state.player_NS.deck)
+        #print(node)
+        # Selection
+        while not node.state.is_terminal() and node.is_fully_expanded():
+            node = node.best_child()
+            #print(node)
+        # Expansion
+        if not node.state.is_terminal():
 
-        # Selection: Traverse down the tree
-        while node.is_fully_expanded() and node.children:
-            try:
-                node = node.best_child()
-            except ValueError:
-                print("No children found during selection.")
-                break
-
-        # Expansion: Add a new node if possible
-        if not node.is_fully_expanded():
-            actions = node.state.legal_actions()
-            if not actions:
-                actions = [False]  # Default action if no legal actions exist
-
-            for action in actions:
-                action_key = get_action_key(action)
-                if action_key not in node.children:
-                    next_state = node.state.copy()
-                    print(action)
-                    next_state.execute_action(action)
-                    child_node = MCTSNode(state=next_state, parent=node)
-                    node.children[action_key] = child_node
-                    print(f"Expanded new action: {action_key}")
-                    break
-
-        # Simulation: Perform a rollout to determine the result
-        reward = simulate_rollout(node.state.copy(), ai_player)
-
-        # Backpropagation: Update the node values up to the root
-        while node:
-            print(node)
-            print(f"Backpropagating reward: {reward}, Node visits: {node.visit_count}, Total value: {node.total_value}")
-            node.visit_count += 1
-            node.total_value += reward
-            print(f"Updated Node: Visits={node.visit_count}, Total Value={node.total_value}")
+            node = node.expand()
+            #print(node)
+        # Simulation
+        result = simulate(node.state, ai)
+        #print(result)
+        # Backpropagation
+        while node is not None:
+            #print(f"Player AP {node.state.player_AP.name}")
+            #print(f"Player NAP {node.state.player_NAP.name}")
+            #print(f"Action Taken {node.state.action_taken}")
+            node.update(result)
+            
+            vector = node.state.get_vector(ai)
+            training_data.append({'state_vector': vector, 'reward': result})
+            
             node = node.parent
+            #print("g")
+    
 
-    # Evaluate and return the best action
-    print("Actions evaluated at root:")
-    for action, child in root.children.items():
-        print(f"Root action: {action}, Visits: {child.visit_count}, Total Value: {child.total_value}")
+            
+            
+    return root.best_child(exploration_weight=0.0)
 
-    # Consider only valid actions for the best action
-    valid_actions = [(action, child) for action, child in root.children.items() if action is not False]
-    if valid_actions:
-        best_action = max(valid_actions, key=lambda item: item[1].visit_count)[0]
-    else:
-        print("No valid actions, defaulting to `False`.")
-        best_action = False  # Default to `False` if no other actions are valid
-    return best_action
+# Play Games with MCTS or NN
+if __name__ == "__main__":
+          
+    ai = player1
+    wins = 0
+    not_finished = 0
+    acts = []
+    
+    
+    for _ in range(0,100,1):
+        initial_state = copy.deepcopy(state)
+        
+        random.shuffle(deck1)
+        random.shuffle(deck2)
+        start_hand1 = deck1[:7]
+        start_hand2 = deck2[:8]
+        deck11 = deck1[7:]
+        deck22 = deck2[8:]
+        
+        initial_state.player_AP.deck = deck11
+        initial_state.player_AP.hand = start_hand1
+        
+        initial_state.player_NAP.deck = deck22
+        initial_state.player_NAP.hand = start_hand2
 
 
-def simulate_rollout(state, ai_player, max_depth=100):
-    """
-    Simulate a game rollout from the given state.
-    """
-    depth = 0
-    while not state.is_terminal() and depth < max_depth:
-        print("Gotta be here")
-        actions = state.legal_actions()
-        if actions:
-            action = random.choice(actions)
-            print(f"Simulating action: {action}")
-            state.execute_action(action)
+        root = Node(initial_state)
+        i=0
+        game_data = []
+        
+        
+    
+        while not root.state.is_terminal(): #and i < 200:
+            if root.state.player_S.name == ai.name:
+                
+
+                # 1 itteration for NN, more for MCTS
+                root = mcts(root,ai, iterations=1)
+                state_copy = copy.deepcopy(root.state)
+                game_data.append(state_copy)
+                if root:
+                    if root.state.action_taken:
+                        acts.append(f"Best action: {root.state.action_taken["type"]} value {root.value} phase {root.state.phase}, #{i}")
+
+                    else:
+                        acts.append(f"Best action: {root.state.action_taken}")
+
+                
+            else:
+ 
+                actions = root.state.legal_actions()
+                action = random.choice(actions)
+                root.state.execute_action(action)
+            
+            i+=1
+            
+            
+            
+        print(f"{root.state.player_AP.name}  {root.state.player_AP.life}")
+        print(f"{root.state.player_NAP.name}  {root.state.player_NAP.life}")
+        print(_)
+        
+        if root.state.winner == None:
+            reward = 0
+            not_finished += 1
+            
+        elif root.state.winner.name == ai.name:
+            reward = 1
+            wins += 1
         else:
-            print("No legal actions, passing priority.")
-            state.execute_action(False)  # Pass turn
-        depth += 1
-    reward = state.get_result(ai_player)
-    print(f"Rollout reached terminal state. Reward: {reward}, Depth: {depth}")
-    return reward
+            reward = -1
+            
+        for stato in game_data:
+            vector = stato.get_vector(ai)
+            training_data.append({'state_vector': vector, 'reward': reward})
+            
+            
+    with open('training_data.txt', 'w') as f:
+        json.dump(training_data, f)      
+   
+    print(wins)
+    print(not_finished)
 
 
-def play_game_with_mcts(ai_player, max_simulations=100):
-    """
-    Main game loop to play a game using Monte Carlo Tree Search for the AI player.
-    """
-    game_state = en.GameState(player_AP=player1, player_NAP=player2, stack=[])
-    root = MCTSNode(game_state, parent=None)
+# Play Random games
+bob = 0
+alice = 0
+for _ in range(0,100,1):
 
-    while not game_state.is_terminal():
-        print(f"\nCurrent Phase: {game_state.phase}")
-        print(f"{game_state.player_AP.name} Life: {game_state.player_AP.life}, {game_state.player_NAP.name} Life: {game_state.player_NAP.life}")
-        current_player = game_state.player_S
-        print(f"Current Player: {'AI' if current_player == ai_player else 'Opponent'}")
-        legal_actions = game_state.legal_actions()
+    stato = copy.deepcopy(state)
+    random.shuffle(stato.player_AP.deck)
+    random.shuffle(stato.player_AP.hand)
+    
+    random.shuffle(stato.player_NAP.deck)
+    random.shuffle(stato.player_NAP.hand)
 
-        if game_state.phase in ["begin phase", "end phase", "first phase"]:
-            en.change_phase(game_state)
+    while not stato.is_terminal():
+        
+        actions = stato.legal_actions()
+        action = random.choice(actions)
+        stato.execute_action(action)
 
-        if not legal_actions or legal_actions == [False]:
-            print("No valid actions. Passing priority.")
-            game_state.execute_action(False)
-            continue
+    stato.determine_winner()
 
-        if current_player == ai_player:
-            print("AI is thinking...")
-            try:
-                best_action = mcts_search(root, max_simulations, ai_player)
-                print(f"AI chooses action: {best_action}")
-                game_state.execute_action(best_action)
-            except Exception as e:
-                print(f"Error during AI decision-making: {e}")
-                game_state.execute_action(False)  # Fallback to passing priority
-        else:
-            print("Opponent is thinking...")
-            opponent_action = random.choice(legal_actions)
-            print(f"Opponent chooses action: {opponent_action}")
-            game_state.execute_action(opponent_action)
-
-        if game_state.is_terminal():
-            break
-
-        root = root.get_child_node_for_action(game_state) or MCTSNode(game_state, parent=None)
-
-    game_state.determine_winner()
-    print("\nGame Over!")
-    if game_state.winner == ai_player:
-        print(f"AI {game_state.winner.name} wins!")
-    elif game_state.winner is None:
-        print("It's a draw!")
-    else:
-        print(f"Opponent {game_state.winner.name} wins!")
-
-
-play_game_with_mcts(player1)
+    if stato.winner.name == "Bob":
+        bob+=1
+    elif stato.winner.name == "Alice":
+        alice+=1
+        
+print(bob)
+print(alice)
